@@ -7,6 +7,7 @@ Create software using natual language
 - [Demo](#demo)
 - [Reasoning](#reasoning)
 - [Syntax](#syntax)
+- [Roadmap](#roadmap)
 
 ## Demo
 
@@ -334,3 +335,10 @@ You can define conditions like this:
 If the variable "age" is higher than 18, return "adult". Otherwise, return "minor".
 If "musician code" is "MOZ", call the "play mozart" function. Otherwise, call the "play beethoven" function.
 ```
+
+## Roadmap
+
+- [ ] Feed generated files into a static code analyzer to check for common issues.
+- [ ] Add support for more languages.
+- [ ] Add support for application types (cli, web api, web app, mobile app).
+- [ ] Generate tests based on the comments.

@@ -14,6 +14,7 @@ class ToDoItem:
     def mark_todo_item_as_incomplete(self):
         self.completed = False
 
+
 todos = [
     ToDoItem("buy bread", "01/01/2025", True),
     ToDoItem("buy milk", "02/02/2026", False),
