@@ -18,13 +18,14 @@ program
   )
   .option("-e, --envfile <value>", "Path to .env file. Default: .env")
   .option("-s, --source <value>", "Path to source directory. Default: source/")
+  .option("-ai, --aiprovider <value>", "AI provider. Default: gemini")
   .parse(process.argv);
 
 const pwd = process.cwd();
 
 const options = program.opts();
 
-console.log(options)
+console.log("OPTIONS: ", options)
 
 if (!options.output) {
   console.log("Using default output directory: /dist");
@@ -46,6 +47,10 @@ if (!options.Source) {
   console.log("Using default source directory: source/");
 }
 
+if (!options.aiprovider) {
+  console.log("Using default AI provider: gemini");
+}
+
 const envfile = options.envfile || ".env";
 const source = options.source || "source/";
 
@@ -53,6 +58,7 @@ const outputPath = `${pwd}/${options.output || "dist/"}`;
 const targetLanguage = options.target || "js";
 const sourceDir = `${pwd}/${source}`;
 const dotEnvFilePath = `${pwd}/${envfile}`;
+const aiProvider = options.aiprovider || "gemini";
 
 console.log("using: ", { outputPath, targetLanguage, sourceDir, dotEnvFilePath });
 
@@ -63,4 +69,5 @@ compile({
   targetLanguage,
   sourceDir,
   dotEnvFilePath,
+  aiProvider,
 });

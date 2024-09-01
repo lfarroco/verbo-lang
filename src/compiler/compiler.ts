@@ -2,17 +2,21 @@ import * as fs from "fs";
 
 import { getEnv, getFiles } from "../utils";
 import { supportedLanguageCode, supportedLanguages } from "../constants";
+import { openai } from "../api/openai";
+import { gemini } from "../api/gemini";
 
 export default async function compile({
   outputPath,
   sourceDir,
   dotEnvFilePath,
   targetLanguage,
+  aiProvider,
 }: {
   outputPath: string;
   sourceDir: string;
   dotEnvFilePath: string;
   targetLanguage: supportedLanguageCode;
+  aiProvider: string;
 }) {
 
   console.log("Compiling source files...");
@@ -63,39 +67,11 @@ The target language is ${languageName}.
 
   // TODO: should be part of the ai provider
   const GEMINI_KEY = getEnv(dotEnvFilePath, "GEMINI_KEY");
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: submitPrompt,
-              },
-            ],
-          },
-        ],
-      }),
-    }
-  );
+  const OPENAI_KEY = getEnv(dotEnvFilePath, "OPENAI_KEY");
 
-  const json = await response.json();
-  console.log(
-    "Received response from the AI. Writing response.md to output folder."
-  );
-  fs.writeFileSync(`${outputPath}/gemini-response.json`, JSON.stringify(json, null, 2));
+  const provider = aiProvider === "gemini" ? gemini(GEMINI_KEY) : openai(OPENAI_KEY);
 
-  // check if the response is valid (should have candidates and parts)
-  if (!json.candidates || !json.candidates[0].content.parts) {
-    console.error("Invalid response from the AI:");
-    console.error(json);
-    return;
-  }
-
-  let { text } = json.candidates[0].content.parts[0];
+  let text = await provider(submitPrompt)
 
   // Google Gemini (sometimes) is returning the code wrapped in backticks besides the prompt
   // check if first line has "```"
@@ -112,9 +88,9 @@ The target language is ${languageName}.
     text = text.split("\n").slice(0, -1).join("\n");
   }
 
-  console.log("Writing gemini-main.js to the output folder.");
+  console.log(`Writing ${aiProvider}-main.js to the output folder.`);
 
-  fs.writeFileSync(`${outputPath}/gemini-main.${targetLanguage}`, text);
+  fs.writeFileSync(`${outputPath}/${aiProvider}-main.${targetLanguage}`, text);
 
   console.log(
     'Your code is ready in the target output folder.'

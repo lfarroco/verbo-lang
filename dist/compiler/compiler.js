@@ -35,16 +35,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = compile;
 const fs = __importStar(require("fs"));
 const utils_1 = require("../utils");
-const languageIndex = {
-    js: "JavaScript",
-    py: "Python",
-    ts: "TypeScript",
-    hs: "Haskell",
-    rs: "Rust",
-    go: "Golang",
-};
+const constants_1 = require("../constants");
+const openai_1 = require("../api/openai");
+const gemini_1 = require("../api/gemini");
 function compile(_a) {
-    return __awaiter(this, arguments, void 0, function* ({ outputPath, sourceDir, dotEnvFilePath, targetLanguage, }) {
+    return __awaiter(this, arguments, void 0, function* ({ outputPath, sourceDir, dotEnvFilePath, targetLanguage, aiProvider, }) {
         console.log("Compiling source files...");
         const files = (0, utils_1.getFiles)(sourceDir);
         let compiledFiles = "";
@@ -55,7 +50,7 @@ function compile(_a) {
             const content = fs.readFileSync(file, "utf8");
             compiledFiles += content + "\n\n";
         });
-        const languageName = languageIndex[targetLanguage];
+        const languageName = constants_1.supportedLanguages[targetLanguage];
         const prompt = `
 You will receive a list of files describing how a software should work.
 Each file name is delimited by a double equal sign (==).
@@ -80,31 +75,9 @@ The target language is ${languageName}.
         console.log("Submitting code to the AI...");
         // TODO: should be part of the ai provider
         const GEMINI_KEY = (0, utils_1.getEnv)(dotEnvFilePath, "GEMINI_KEY");
-        const response = yield fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_KEY}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        parts: [
-                            {
-                                text: submitPrompt,
-                            },
-                        ],
-                    },
-                ],
-            }),
-        });
-        const json = yield response.json();
-        console.log("Received response from the AI. Writing response.md to output folder.");
-        fs.writeFileSync(`${outputPath}/gemini-response.json`, JSON.stringify(json, null, 2));
-        // check if the response is valid (should have candidates and parts)
-        if (!json.candidates || !json.candidates[0].content.parts) {
-            console.error("Invalid response from the AI:");
-            console.error(json);
-            return;
-        }
-        let { text } = json.candidates[0].content.parts[0];
+        const OPENAI_KEY = (0, utils_1.getEnv)(dotEnvFilePath, "OPENAI_KEY");
+        const provider = aiProvider === "gemini" ? (0, gemini_1.gemini)(GEMINI_KEY) : (0, openai_1.openai)(OPENAI_KEY);
+        let text = yield provider(submitPrompt);
         // Google Gemini (sometimes) is returning the code wrapped in backticks besides the prompt
         // check if first line has "```"
         // if it does, remove it
@@ -118,7 +91,7 @@ The target language is ${languageName}.
             text = text.split("\n").slice(0, -1).join("\n");
         }
         console.log("Writing gemini-main.js to the output folder.");
-        fs.writeFileSync(`${outputPath}/gemini-main.${targetLanguage}`, text);
+        fs.writeFileSync(`${outputPath}/${aiProvider}-main.${targetLanguage}`, text);
         console.log('Your code is ready in the target output folder.');
     });
 }
