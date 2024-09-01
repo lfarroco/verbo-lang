@@ -55,12 +55,12 @@ For each todo item, call the function "print todo item".
 
 Print "===="
 
-Then, use the "mark todo item as completed" for the second item.
+Then, use the "mark todo item as completed" function for the second item.
 After that, print the second item.
 
 Print "===="
 
-Then, use the "mark todo item as incomplete" for the first item.
+Then, use the "mark todo item as incomplete" function for the first item.
 After that, print the first item.
 
 Print "===="
