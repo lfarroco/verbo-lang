@@ -1,5 +1,5 @@
 # verbo-lang
-Create software using natual language
+Create software using natural language
 
 
 ## Table of Contents
