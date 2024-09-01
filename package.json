@@ -1,5 +1,5 @@
 {
-  "name": "verbo",
+  "name": "verbo-lang",
   "version": "1.0.0",
   "description": "Create software using natual language",
   "main": "dist/index.js",
