@@ -1,5 +1,4 @@
 
-
 export const supportedLanguages = {
 	js: "JavaScript",
 	py: "Python",

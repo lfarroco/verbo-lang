@@ -238,17 +238,18 @@ We didn't achieve the "make a website, no bugs, please" phase yet, but maybe we 
 
 ## Getting Started
 
-In your project directory create a `.env` with `GEMINI_KEY=...` - you can get one key for free at https://aistudio.google.com/app/apikey.
-We intend to add more AI providers in the future.
+In your project directory create a `.env` with `GEMINI_KEY=...` or `OPENAI_KEY=...`.
+You can get a free API key for Gemini at https://aistudio.google.com/app/apikey.
+We intend to add more AI providers in the future - including your own personal AI.
 
 Then, you can run the cli using:
 
 - `npx verbo-lang`
 - or, `npm install -g verbo-lang` then `verbo`
 
-By default, the cli reads all .md files in the `source` directory. Having a `main.md` file is required.
+By default, the cli reads all `.md` files in the `source` directory. Having a `main.md` file is required.
 The generated files will be placed in the `dist` directory.
-Use `--target <lang>` to choose the target language. The default is `js`, but you can choose from `py`, `go`, `hs`, and others.
+Use `--target <lang>` to choose the target language. The default is `js`, but you can choose from `py`, `go`, `java`, `hs`, and others.
 
 You can run `verbo --help` to see all the available options.
 
@@ -354,6 +355,9 @@ If "musician code" is "MOZ", call the "play mozart" function. Otherwise, call th
 
 ## Roadmap
 
+- [ ] Define how interfaces should operate
+- [ ] Define interaction with existing code
+- [ ] Define "skills" like HTTP requests, file operations, etc.
 - [ ] Add other AI providers (OpenAI, Llama, your personal AI, etc.)
 - [ ] Feed generated files into a static code analyzer to check for common issues
 - [ ] Add support for more languages

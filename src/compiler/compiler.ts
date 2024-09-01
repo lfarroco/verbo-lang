@@ -66,10 +66,14 @@ The target language is ${languageName}.
   console.log("Submitting code to the AI...");
 
   // TODO: should be part of the ai provider
-  const GEMINI_KEY = getEnv(dotEnvFilePath, "GEMINI_KEY");
-  const OPENAI_KEY = getEnv(dotEnvFilePath, "OPENAI_KEY");
 
-  const provider = aiProvider === "gemini" ? gemini(GEMINI_KEY) : openai(OPENAI_KEY);
+  const provider = aiProvider === "gemini" ?
+    gemini(
+      getEnv(dotEnvFilePath, "GEMINI_KEY"),
+    ) :
+    openai(
+      getEnv(dotEnvFilePath, "OPENAI_KEY"),
+    );
 
   let text = await provider(submitPrompt)
 
