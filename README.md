@@ -89,16 +89,13 @@ We didn't achieve the "make a website, no bugs, please" phase yet, but maybe we 
 The language uses markdown files to allow compatibility with tools that allow rich text editing
 and displaying, but no special markup is required to create a working program.
 
-
-
-## Comments
+### Comments
 
 That's the nice thing about verbo - everything is a comment. All the text is at the
 same time documentation and code.
 
-## Literals
+### Literals
 
-You can declare variables like this:
 
 You can use direct assignment:
 
@@ -109,12 +106,14 @@ age: 25
 or signal that a variable exists:
 ```verbo
 Use a constant called FILE_PATH to store the path to the configuration file.
+Use a variable called "address" to store the user's address.
 ```
 
 Later, you can use the variable like this:
 ```verbo
 Log the FILE_PATH variable to the console.
-```
+Call the "navigate" function, passing the "address" variable as a parameter.
+``
 
 ## Lists
 
@@ -167,26 +166,15 @@ A "Person" object has the following properties:
   - "is student", a boolean
 ```
 
-## Methods
-
-You can attach methods to objects like this:
-
-```
-A "Person" object has the "yell" method. This method returns the person's name in uppercase.
-```
-
-Or use it to mutate the object:
-
-```
-A "Person" object has the "grow" method. This method increases the person's age by 1.
-```
 
 ## Functions
 
 You can define functions like this:
 
 ```
-Define a function called "sum". It receives two parameters, "a" and "b". It returns the sum of "a" and "b".
+Define a function called "sum".
+It receives two parameters, "a" and "b".
+It returns the sum of "a" and "b".
 ```
 
 ## Conditions
@@ -195,4 +183,5 @@ You can define conditions like this:
 
 ```
 If the variable "age" is higher than 18, return "adult". Otherwise, return "minor".
+If "musician code" is "MOZ", call the "play mozart" function. Otherwise, call the "play beethoven" function.
 ```
