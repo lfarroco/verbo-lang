@@ -46,6 +46,7 @@ export const getFiles = (source: string): string[] => {
         if (entry.name === "main.md") {
           return;
         }
+
         files.push(`${dir}/${entry.name}`);
       }
     });
@@ -54,5 +55,9 @@ export const getFiles = (source: string): string[] => {
 
   readFiles(source);
 
-  return files.concat(`${source}/main.md`);
+  const allFiles = files.concat(`${source}/main.md`);
+
+  console.log("all files: ", allFiles)
+
+  return allFiles;
 };

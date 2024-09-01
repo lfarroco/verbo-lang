@@ -43,7 +43,9 @@ const getFiles = (source) => {
         });
     }
     readFiles(source);
-    return files.concat(`${source}/main.md`);
+    const allFiles = files.concat(`${source}/main.md`);
+    console.log("all files: ", allFiles);
+    return allFiles;
 };
 exports.getFiles = getFiles;
 //# sourceMappingURL=utils.js.map

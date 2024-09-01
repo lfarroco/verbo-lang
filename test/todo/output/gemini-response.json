@@ -1,0 +1,39 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "```javascript\nconst todos = [\n  { name: 'buy bread', dueTo: '01/01/2025', completed: true },\n  { name: 'buy milk', dueTo: '02/02/2026', completed: false },\n  { name: 'buy eggs', dueTo: '03/03/2027', completed: false },\n  { name: 'buy cheese', dueTo: '04/04/2028', completed: false },\n  { name: 'buy yogurt', dueTo: '05/05/2029', completed: false },\n  { name: 'buy fruit', dueTo: '06/06/2030', completed: false },\n];\n\nfunction printTodoItem(todoItem) {\n  const completionMark = todoItem.completed ? '[x]' : '[ ]';\n  console.log(`${completionMark} ${todoItem.name} - due to ${todoItem.dueTo}`);\n}\n\ntodos.forEach(printTodoItem);\n```"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0,
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE"
+        }
+      ]
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 435,
+    "candidatesTokenCount": 243,
+    "totalTokenCount": 678
+  }
+}

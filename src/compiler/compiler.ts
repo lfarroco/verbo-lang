@@ -21,7 +21,10 @@ export default async function compile({
   let compiledFiles = "";
 
   files.forEach((file: string) => {
-    compiledFiles += `== ${file} ==\n\n`;
+
+    // remove absolute file path from the file name
+    const filteredFileName = file.replace(sourceDir + "/", "");
+    compiledFiles += `== ${filteredFileName} ==\n\n`;
     const content = fs.readFileSync(file, "utf8");
 
     compiledFiles += content + "\n\n";
@@ -37,6 +40,8 @@ The code should not be wrapped in backticks.
 The target language is JavaScript.
 `;
   const submitPrompt = `${prompt}\n\n${compiledFiles}`;
+
+  console.log("The prompt:", submitPrompt)
 
   console.log(`Preparing output folder at ${outputPath}`);
 
@@ -74,7 +79,7 @@ The target language is JavaScript.
   console.log(
     "Received response from the AI. Writing response.md to output folder."
   );
-  fs.writeFileSync(`${outputPath}/gemini-response.json`, JSON.stringify(json));
+  fs.writeFileSync(`${outputPath}/gemini-response.json`, JSON.stringify(json, null, 2));
 
   // check if the response is valid (should have candidates and parts)
   if (!json.candidates || !json.candidates[0].content.parts) {
