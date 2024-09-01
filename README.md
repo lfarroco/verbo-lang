@@ -52,20 +52,40 @@ todos:
 Pick the list of todos located at example-todos.md.
 
 For each todo item, call the function "print todo item".
+
+Print "===="
+
+Then, use the "mark todo item as completed" for the second item.
+After that, print the second item.
+
+Print "===="
+
+Then, use the "mark todo item as incomplete" for the first item.
+After that, print the first item.
+
+Print "===="
+
+When all is done, print "Goodbye!".
 ```
 
-Then, when we compile the above specifications, we generate code that produces
+When we compile the above specifications, the generated code produces
 the following output:
 ```
 [x] buy bread - due to 01/01/2025
 [ ] buy milk - due to 02/02/2026
 [ ] buy eggs - due to 03/03/2027
 [ ] buy cheese - due to 04/04/2028
-[ ] buy yogurt - due to 05/05/2029
-[ ] buy fruit - due to 06/06/2030
+[ ] buy ham - due to 05/05/2029
+[ ] buy wine - due to 06/06/2030
+====
+[x] buy milk - due to 02/02/2026
+====
+[ ] buy bread - due to 01/01/2025
+====
+Goodbye!
 ```
 
-Here are some languages that we can target (examples used Google Gemini 1.5-flash at 2024-09-01):
+Here are some languages that we can target (examples generated with Google Gemini 1.5-flash at 2024-09-01):
 
 JavaScript
 
@@ -75,53 +95,84 @@ const todos = [
   { name: 'buy milk', dueTo: '02/02/2026', completed: false },
   { name: 'buy eggs', dueTo: '03/03/2027', completed: false },
   { name: 'buy cheese', dueTo: '04/04/2028', completed: false },
-  { name: 'buy yogurt', dueTo: '05/05/2029', completed: false },
-  { name: 'buy fruit', dueTo: '06/06/2030', completed: false },
+  { name: 'buy ham', dueTo: '05/05/2029', completed: false },
+  { name: 'buy wine', dueTo: '06/06/2030', completed: false },
 ];
 
 function printTodoItem(todoItem) {
-  const completionMark = todoItem.completed ? '[x]' : '[ ]';
-  console.log(`${completionMark} ${todoItem.name} - due to ${todoItem.dueTo}`);
+  const completedSymbol = todoItem.completed ? 'x' : ' ';
+  console.log(`[${completedSymbol}] ${todoItem.name} - due to ${todoItem.dueTo}`);
+}
+
+function markTodoItemAsCompleted(todoItem) {
+  todoItem.completed = true;
+}
+
+function markTodoItemAsIncomplete(todoItem) {
+  todoItem.completed = false;
 }
 
 todos.forEach(printTodoItem);
+
+console.log('====');
+
+markTodoItemAsCompleted(todos[1]);
+printTodoItem(todos[1]);
+
+console.log('====');
+
+markTodoItemAsIncomplete(todos[0]);
+printTodoItem(todos[0]);
+
+console.log('====');
+
+console.log('Goodbye!');
 ```
 
 Or, if you fancy Python:
 
 ```python
-from datetime import datetime
-
-class TodoItem:
-    def __init__(self, name, due_to, completed=False):
+class ToDoItem:
+    def __init__(self, name, due_to, completed):
         self.name = name
         self.due_to = due_to
         self.completed = completed
 
     def print_todo_item(self):
-        completed_marker = "[x]" if self.completed else "[ ]"
-        print(f"{completed_marker} {self.name} - due to {self.due_to.strftime('%Y-%m-%d')}")
+        completed_mark = "[x]" if self.completed else "[ ]"
+        print(f"{completed_mark} {self.name} - due to {self.due_to}")
 
-    def mark_completed(self):
+    def mark_todo_item_as_completed(self):
         self.completed = True
 
-    def mark_incomplete(self):
+    def mark_todo_item_as_incomplete(self):
         self.completed = False
 
-# Example Todos
 todos = [
-    TodoItem("buy bread", datetime(2025, 1, 1), completed=True),
-    TodoItem("buy milk", datetime(2026, 2, 2)),
-    TodoItem("walk the dog", datetime(2023, 12, 25)),
-    TodoItem("pay bills", datetime(2024, 1, 15)),
-    TodoItem("clean the house", datetime(2023, 12, 31)),
-    TodoItem("go to the gym", datetime(2024, 1, 1)),
-    TodoItem("buy groceries", datetime(2023, 12, 24)),
+    ToDoItem("buy bread", "01/01/2025", True),
+    ToDoItem("buy milk", "02/02/2026", False),
+    ToDoItem("buy eggs", "03/03/2027", False),
+    ToDoItem("buy cheese", "04/04/2028", False),
+    ToDoItem("buy yogurt", "05/05/2029", False),
+    ToDoItem("buy coffee", "06/06/2030", False),
 ]
 
-# Print each todo item
 for todo in todos:
     todo.print_todo_item()
+
+print("====")
+
+todos[1].mark_todo_item_as_completed()
+todos[1].print_todo_item()
+
+print("====")
+
+todos[0].mark_todo_item_as_incomplete()
+todos[0].print_todo_item()
+
+print("====")
+
+print("Goodbye!")
 ```
 
 Why not in Haskell?
@@ -133,22 +184,38 @@ data TodoItem = TodoItem {
   completed :: Bool
 } deriving (Show)
 
-printTodoItem :: TodoItem -> String
-printTodoItem todoItem =
-  let completedMark = if completed todoItem then "[x]" else "[ ]"
-  in completedMark ++ " " ++ name todoItem ++ " - due to " ++ dueDate todoItem
+-- example-todos.md
+todos = [
+  TodoItem { name = "buy bread", dueDate = "01/01/2025", completed = True },
+  TodoItem { name = "buy milk", dueDate = "02/02/2026", completed = False },
+  TodoItem { name = "buy cheese", dueDate = "03/03/2027", completed = False },
+  TodoItem { name = "buy eggs", dueDate = "04/04/2028", completed = False },
+  TodoItem { name = "buy flour", dueDate = "05/05/2029", completed = False },
+  TodoItem { name = "buy sugar", dueDate = "06/06/2030", completed = False }
+]
 
-todos =
-  [ TodoItem { name = "buy bread", dueDate = "01/01/2025", completed = True }
-  , TodoItem { name = "buy milk", dueDate = "02/02/2026", completed = False }
-  , TodoItem { name = "buy eggs", dueDate = "03/03/2027", completed = False }
-  , TodoItem { name = "buy cheese", dueDate = "04/04/2028", completed = False }
-  , TodoItem { name = "buy butter", dueDate = "05/05/2029", completed = False }
-  , TodoItem { name = "buy yogurt", dueDate = "06/06/2030", completed = False }
-  ]
+printTodoItem :: TodoItem -> IO ()
+printTodoItem item = putStrLn $
+  if completed item then "[x] " else "[ ] " ++
+  name item ++ " - due to " ++ dueDate item
+
+markTodoItemAsCompleted :: TodoItem -> TodoItem
+markTodoItemAsCompleted item = item { completed = True }
+
+markTodoItemAsIncomplete :: TodoItem -> TodoItem
+markTodoItemAsIncomplete item = item { completed = False }
 
 main :: IO ()
-main = mapM_ (putStrLn . printTodoItem) todos
+main = do
+  mapM_ printTodoItem todos
+  putStrLn "===="
+  let secondItem = todos !! 1
+  printTodoItem $ markTodoItemAsCompleted secondItem
+  putStrLn "===="
+  let firstItem = todos !! 0
+  printTodoItem $ markTodoItemAsIncomplete firstItem
+  putStrLn "===="
+  putStrLn "Goodbye!"
 ```
 
 ## Reasoing
@@ -175,7 +242,7 @@ and displaying, but no special markup is required to create a working program.
 
 ### Comments
 
-That's the nice thing about verbo - everything is a comment. All the text is at the
+That's the nice thing about Verbo - everything is a comment. All the text is at the
 same time documentation and code.
 
 ### Constants/Variables
@@ -196,7 +263,7 @@ Later, you can use the variable like this:
 ```
 Log the FILE_PATH variable to the console.
 Call the "navigate" function, passing the "address" variable as a parameter.
-``
+```
 
 ### Lists
 

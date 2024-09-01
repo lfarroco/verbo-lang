@@ -51,10 +51,14 @@ function compile(_a) {
 You will receive a list of files describing how a software should work.
 Each file name is delimited by a double equal sign (==).
 Starting from the file "main.md", generate code that will implement the software.
-If the code description has the pattern "... generate" it means that you should generate data that fits that context.
+If the code description says something in the lines of "... generate n items", or "generate n random items",
+ it means that you should generate data that fits that context.
+If the description says something in the lines of "using the constant/variable declared at some_file.md",
+this means that you should use the variable declared at the file x.md (not try to import it).
+If the constant is used in multiple places, you may turn it into a function.
 The response should come as a single block of code.
 The code should not be wrapped in backticks.
-The target language is JavaScript.
+The target language is Haskell.
 `;
         const submitPrompt = `${prompt}\n\n${compiledFiles}`;
         console.log("The prompt:", submitPrompt);
@@ -105,7 +109,7 @@ The target language is JavaScript.
             text = text.split("\n").slice(0, -1).join("\n");
         }
         console.log("Writing gemini-main.js to the output folder.");
-        fs.writeFileSync(`${outputPath}/gemini-main.js`, text);
+        fs.writeFileSync(`${outputPath}/gemini-main.hs`, text);
         console.log('Your code is ready in the target output folder.');
     });
 }

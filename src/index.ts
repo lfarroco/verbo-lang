@@ -46,8 +46,6 @@ if (!options.Source) {
 const envfile = options.envfile || ".env";
 const source = options.source || "source/";
 
-
-
 const outputPath = `${pwd}/${options.output || "dist/"}`;
 const targetLanguage = options.target || "js";
 const sourceDir = `${pwd}/${source}`;
