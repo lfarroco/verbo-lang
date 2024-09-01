@@ -61,9 +61,8 @@ The generated code prints the following todo items:
 [ ] buy milk - due to 02/02/2026
 [ ] buy eggs - due to 03/03/2027
 [ ] buy cheese - due to 04/04/2028
-[ ] buy coffee - due to 05/05/2029
-[ ] buy sugar - due to 06/06/2030
-[ ] buy flour - due to 07/07/2031
+[ ] buy yogurt - due to 05/05/2029
+[ ] buy fruit - due to 06/06/2030
 ```
 
 
@@ -94,8 +93,7 @@ and displaying, but no special markup is required to create a working program.
 That's the nice thing about verbo - everything is a comment. All the text is at the
 same time documentation and code.
 
-### Literals
-
+### Constants/Variables
 
 You can use direct assignment:
 
@@ -104,13 +102,13 @@ name: "John"
 age: 25
 ```
 or signal that a variable exists:
-```verbo
+```markdown
 Use a constant called FILE_PATH to store the path to the configuration file.
 Use a variable called "address" to store the user's address.
 ```
 
 Later, you can use the variable like this:
-```verbo
+```markdown
 Log the FILE_PATH variable to the console.
 Call the "navigate" function, passing the "address" variable as a parameter.
 ``
@@ -119,7 +117,7 @@ Call the "navigate" function, passing the "address" variable as a parameter.
 
 You can define lists like this:
 
-```verbo
+```markdown
 names:
   - John
   - Mary
@@ -128,7 +126,7 @@ names:
 
 Or use natural language:
 
-```verbo
+```markdown
 The list "test foods" contains the following items:
   - apple
   - banana
@@ -138,7 +136,7 @@ The list "test foods" contains the following items:
 
 This is useful for defining test data.
 
-## Objects
+### Objects
 
 You can define objects like this:
 
@@ -166,8 +164,7 @@ A "Person" object has the following properties:
   - "is student", a boolean
 ```
 
-
-## Functions
+### Functions
 
 You can define functions like this:
 
