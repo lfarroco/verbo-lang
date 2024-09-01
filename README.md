@@ -86,6 +86,8 @@ the following output:
 Goodbye!
 ```
 
+The definitions don't need to be in English (check the exemple under `test/todo-pt-br`).
+
 Here are some languages that we can target (examples generated with Google Gemini 1.5-flash at 2024-09-01):
 
 JavaScript
