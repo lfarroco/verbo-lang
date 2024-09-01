@@ -18,7 +18,7 @@ Given a directory with three markdown files, `model.md`, `example-todos.md`, and
 A "To-Do Item" object has the following properties:
 
 - name
-- due to date
+- due date
 - completed (bool)
 
 Here are some functions that allow interacting with a todo item:
@@ -26,7 +26,7 @@ Here are some functions that allow interacting with a todo item:
 - print todo item:
   This function prints to the console a string that represents the todo item.
   The string follows this pattern:
-  "[<if completed, "x", otherwise, just " ">] <name> - due to <due to date>"
+  "[<if completed, "x", otherwise, just " ">] <name> - due to <due date>"
 
 - mark todo item as completed:
   This function changes the completed property of the todo item to True.
@@ -219,7 +219,7 @@ main = do
   putStrLn "Goodbye!"
 ```
 
-## Reasoing
+## Reasoning
 
 In the past few years, there has been a lot of progress in the field of Natural Language
 Processing with the rise of transformers and the popularization of GPT models.
@@ -228,13 +228,29 @@ generation process, like writing "the function below returns the square of a num
 then letting the model generate said function.
 
 With Verbo, we take this idea to the next level by using the comments as the code itself.
-Besides using natural language, you still need to be aware on how computers work, as will
+Besides using natural language, you still need to be aware on how computers work, as you
 will still be handling variables, functions, and other programming concepts.
 
 Another advantage is being able to target multiple languages at once, as the base language
 is fairly simple and generic.
 
 We didn't achieve the "make a website, no bugs, please" phase yet, but maybe we will get there someday.
+
+## Getting Started
+
+In your project directory create a `.env` with `GEMINI_KEY=...` - you can get one key for free at https://aistudio.google.com/app/apikey.
+We intend to add more AI providers in the future.
+
+Then, you can run the cli using:
+
+- `npx verbo-lang`
+- or, `npm install -g verbo-lang` then `verbo`
+
+By default, the cli reads all .md files in the `source` directory. Having a `main.md` file is required.
+The generated files will be placed in the `output` directory.
+Use `--target <lang>` to choose the target language. The default is `js`, but you can choose from `py`, `go`, `hs`, and others.
+
+You can run `verbo --help` to see all the available options.
 
 ## Syntax
 
@@ -338,7 +354,9 @@ If "musician code" is "MOZ", call the "play mozart" function. Otherwise, call th
 
 ## Roadmap
 
-- [ ] Feed generated files into a static code analyzer to check for common issues.
-- [ ] Add support for more languages.
-- [ ] Add support for application types (cli, web api, web app, mobile app).
-- [ ] Generate tests based on the comments.
+- [ ] Add other AI providers (OpenAI, Llama, your personal AI, etc.)
+- [ ] Feed generated files into a static code analyzer to check for common issues
+- [ ] Add support for more languages
+- [ ] Add support for application types (cli, web api, web app, mobile app)
+- [ ] Generate tests based on the comments
+- [ ] Get the model to analyze the code and suggest improvements

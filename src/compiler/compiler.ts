@@ -1,17 +1,7 @@
 import * as fs from "fs";
 
 import { getEnv, getFiles } from "../utils";
-
-const languageIndex = {
-  js: "JavaScript",
-  py: "Python",
-  ts: "TypeScript",
-  hs: "Haskell",
-  rs: "Rust",
-  go: "Golang",
-};
-
-type SupportedLanguages = keyof typeof languageIndex;
+import { supportedLanguageCode, supportedLanguages } from "../constants";
 
 export default async function compile({
   outputPath,
@@ -22,7 +12,7 @@ export default async function compile({
   outputPath: string;
   sourceDir: string;
   dotEnvFilePath: string;
-  targetLanguage: SupportedLanguages;
+  targetLanguage: supportedLanguageCode;
 }) {
 
   console.log("Compiling source files...");
@@ -41,7 +31,7 @@ export default async function compile({
     compiledFiles += content + "\n\n";
   });
 
-  const languageName = languageIndex[targetLanguage] as string;
+  const languageName = supportedLanguages[targetLanguage] as string;
 
   const prompt = `
 You will receive a list of files describing how a software should work.

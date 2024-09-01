@@ -1,7 +1,10 @@
 import { Command } from "commander";
 import compile from "./compiler/compiler";
+import { supportedLanguageCodes } from "./constants";
 
 const program = new Command();
+
+const languagesList = supportedLanguageCodes.join(", ");
 
 program
   .version("0.0.1")
@@ -11,7 +14,7 @@ program
   .option("-o, --output <value>", "Target output directory")
   .option(
     "-t, --target [value]",
-    "Target language. Valid options: js, py, go, hs, c. Default: js"
+    `Target language. Valid options: ${languagesList}. Default: js`
   )
   .option("-e, --envfile <value>", "Path to .env file. Default: .env")
   .option("-s, --source <value>", "Path to source directory. Default: source/")
@@ -27,8 +30,8 @@ if (!options.output) {
   console.log("Using default output directory: /dist");
 }
 
-if (options.target && !["js", "py", "go", "hs", "c"].includes(options.target)) {
-  console.error("Invalid target language. Valid options: js, py, go, hs, c");
+if (options.target && !languagesList.includes(options.target)) {
+  console.error(`Invalid target language. Valid options: ${languagesList}`);
 }
 
 if (!options.target) {

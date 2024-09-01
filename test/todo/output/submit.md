@@ -29,7 +29,7 @@ todos:
 A "To-Do Item" object has the following properties:
 
 - name, a string up to 10 characters
-- due to date
+- due date
 - completed (bool)
 
 Here are some functions that allow interacting with a todo item:
@@ -37,7 +37,7 @@ Here are some functions that allow interacting with a todo item:
 - print todo item:
   This function prints to the console a string that represents the todo item.
   The string follows this pattern:
-  "[<if completed, "x", otherwise, just " ">] <name> - due to <due to date>"
+  "[<if completed, "x", otherwise, just " ">] <name> - due to <due date>"
   Completed item example: [x] buy bread - due to 2025-01-01
   Incomplete item example: [ ] buy milk - due to 2026-02-02
 

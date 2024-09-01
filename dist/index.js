@@ -11,7 +11,7 @@ program
     .version("0.0.1")
     .description("A simple programming language that lets you compile code using natural language.")
     .option("-o, --output <value>", "Target output directory")
-    .option("-t, --target [value]", "Target language. Valid options: js, py, go, hs, c. Default: js")
+    .option("-t, --target [value]", "Target language. Valid options: js, py, go, hs, c, rs. Default: js")
     .option("-e, --envfile <value>", "Path to .env file. Default: .env")
     .option("-s, --source <value>", "Path to source directory. Default: source/")
     .parse(process.argv);
@@ -21,8 +21,8 @@ console.log(options);
 if (!options.output) {
     console.log("Using default output directory: /dist");
 }
-if (options.target && !["js", "py", "go", "hs", "c"].includes(options.target)) {
-    console.error("Invalid target language. Valid options: js, py, go, hs, c");
+if (options.target && !["js", "py", "go", "hs", "c", "rs"].includes(options.target)) {
+    console.error("Invalid target language. Valid options: js, py, go, hs, c, rs");
 }
 if (!options.target) {
     console.log("Using default target language: js");
