@@ -13,7 +13,7 @@ Create software using natual language
 Given a directory with three markdown files, `model.md`, `example-todos.md`, and `main.md`, with the following contents:
 
 #### model.md
-```markdown
+```
 A "To-Do Item" object has the following properties:
 
 - name
@@ -35,7 +35,7 @@ Here are some functions that allow interacting with a todo item:
 ```
 
 #### example-todos.md
-```markdown
+```
 This defines a constant called "todos".
 
 It is a list of example todo items.
@@ -48,14 +48,14 @@ todos:
  ```
 
 #### main.md
-```markdown
+```
 Pick the list of todos located at example-todos.md.
 
 For each todo item, call the function "print todo item".
 ```
 
-The generated code prints the following todo items:
-
+Then, when we compile the above specifications, we generate code that produces
+the following output:
 ```
 [x] buy bread - due to 01/01/2025
 [ ] buy milk - due to 02/02/2026
@@ -65,6 +65,91 @@ The generated code prints the following todo items:
 [ ] buy fruit - due to 06/06/2030
 ```
 
+Here are some languages that we can target (examples used Google Gemini 1.5-flash at 2024-09-01):
+
+JavaScript
+
+```javascript
+const todos = [
+  { name: 'buy bread', dueTo: '01/01/2025', completed: true },
+  { name: 'buy milk', dueTo: '02/02/2026', completed: false },
+  { name: 'buy eggs', dueTo: '03/03/2027', completed: false },
+  { name: 'buy cheese', dueTo: '04/04/2028', completed: false },
+  { name: 'buy yogurt', dueTo: '05/05/2029', completed: false },
+  { name: 'buy fruit', dueTo: '06/06/2030', completed: false },
+];
+
+function printTodoItem(todoItem) {
+  const completionMark = todoItem.completed ? '[x]' : '[ ]';
+  console.log(`${completionMark} ${todoItem.name} - due to ${todoItem.dueTo}`);
+}
+
+todos.forEach(printTodoItem);
+```
+
+Or, if you fancy Python:
+
+```python
+from datetime import datetime
+
+class TodoItem:
+    def __init__(self, name, due_to, completed=False):
+        self.name = name
+        self.due_to = due_to
+        self.completed = completed
+
+    def print_todo_item(self):
+        completed_marker = "[x]" if self.completed else "[ ]"
+        print(f"{completed_marker} {self.name} - due to {self.due_to.strftime('%Y-%m-%d')}")
+
+    def mark_completed(self):
+        self.completed = True
+
+    def mark_incomplete(self):
+        self.completed = False
+
+# Example Todos
+todos = [
+    TodoItem("buy bread", datetime(2025, 1, 1), completed=True),
+    TodoItem("buy milk", datetime(2026, 2, 2)),
+    TodoItem("walk the dog", datetime(2023, 12, 25)),
+    TodoItem("pay bills", datetime(2024, 1, 15)),
+    TodoItem("clean the house", datetime(2023, 12, 31)),
+    TodoItem("go to the gym", datetime(2024, 1, 1)),
+    TodoItem("buy groceries", datetime(2023, 12, 24)),
+]
+
+# Print each todo item
+for todo in todos:
+    todo.print_todo_item()
+```
+
+Why not in Haskell?
+
+```haskell
+data TodoItem = TodoItem {
+  name :: String,
+  dueDate :: String,
+  completed :: Bool
+} deriving (Show)
+
+printTodoItem :: TodoItem -> String
+printTodoItem todoItem =
+  let completedMark = if completed todoItem then "[x]" else "[ ]"
+  in completedMark ++ " " ++ name todoItem ++ " - due to " ++ dueDate todoItem
+
+todos =
+  [ TodoItem { name = "buy bread", dueDate = "01/01/2025", completed = True }
+  , TodoItem { name = "buy milk", dueDate = "02/02/2026", completed = False }
+  , TodoItem { name = "buy eggs", dueDate = "03/03/2027", completed = False }
+  , TodoItem { name = "buy cheese", dueDate = "04/04/2028", completed = False }
+  , TodoItem { name = "buy butter", dueDate = "05/05/2029", completed = False }
+  , TodoItem { name = "buy yogurt", dueDate = "06/06/2030", completed = False }
+  ]
+
+main :: IO ()
+main = mapM_ (putStrLn . printTodoItem) todos
+```
 
 ## Reasoing
 
@@ -102,22 +187,22 @@ name: "John"
 age: 25
 ```
 or signal that a variable exists:
-```markdown
+```
 Use a constant called FILE_PATH to store the path to the configuration file.
 Use a variable called "address" to store the user's address.
 ```
 
 Later, you can use the variable like this:
-```markdown
+```
 Log the FILE_PATH variable to the console.
 Call the "navigate" function, passing the "address" variable as a parameter.
 ``
 
-## Lists
+### Lists
 
 You can define lists like this:
 
-```markdown
+```
 names:
   - John
   - Mary
@@ -126,7 +211,7 @@ names:
 
 Or use natural language:
 
-```markdown
+```
 The list "test foods" contains the following items:
   - apple
   - banana
@@ -140,7 +225,7 @@ This is useful for defining test data.
 
 You can define objects like this:
 
-```verbo
+```
 person:
   name: "John"
   age: 25
@@ -174,7 +259,7 @@ It receives two parameters, "a" and "b".
 It returns the sum of "a" and "b".
 ```
 
-## Conditions
+### Conditions
 
 You can define conditions like this:
 
