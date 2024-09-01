@@ -247,7 +247,7 @@ Then, you can run the cli using:
 - or, `npm install -g verbo-lang` then `verbo`
 
 By default, the cli reads all .md files in the `source` directory. Having a `main.md` file is required.
-The generated files will be placed in the `output` directory.
+The generated files will be placed in the `dist` directory.
 Use `--target <lang>` to choose the target language. The default is `js`, but you can choose from `py`, `go`, `hs`, and others.
 
 You can run `verbo --help` to see all the available options.
