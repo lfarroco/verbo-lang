@@ -238,14 +238,26 @@ We didn't achieve the "make a website, no bugs, please" phase yet, but maybe we 
 
 ## Getting Started
 
-In your project directory create a `.env` with `GEMINI_KEY=...` or `OPENAI_KEY=...`.
+A basic project looks like this:
+```
+- source/
+  - main.md
+  - model.md
+  - example-todos.md
+- dist/
+.env
+```
+
+In your project directory create a `.env` with `GEMINI_KEY=...` or `OPENAI_KEY=...`, depending
+on which AI provider you want to use.
 You can get a free API key for Gemini at https://aistudio.google.com/app/apikey.
 We intend to add more AI providers in the future - including your own personal AI.
 
-Then, you can run the cli using:
+Then, install the cli:
 
-- `npx verbo-lang`
-- or, `npm install -g verbo-lang` then `verbo`
+`npm install -g verbo-lang` 
+
+Run it with `verbo`.
 
 By default, the cli reads all `.md` files in the `source` directory. Having a `main.md` file is required.
 The generated files will be placed in the `dist` directory.
