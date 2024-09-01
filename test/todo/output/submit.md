@@ -2,10 +2,14 @@
 You will receive a list of files describing how a software should work.
 Each file name is delimited by a double equal sign (==).
 Starting from the file "main.md", generate code that will implement the software.
-If the code description has the pattern "... generate" it means that you should generate data that fits that context.
+If the code description says something in the lines of "... generate n items", or "generate n random items",
+ it means that you should generate data that fits that context.
+If the description says something in the lines of "using the constant/variable declared at some_file.md",
+this means that you should use the variable declared at the file x.md (not try to import it).
+If the constant is used in multiple places, you may turn it into a function.
 The response should come as a single block of code.
 The code should not be wrapped in backticks.
-The target language is JavaScript.
+The target language is TypeScript.
 
 
 == example-todos.md ==
@@ -50,4 +54,17 @@ Pick the list of todos located at example-todos.md.
 
 For each todo item, call the function "print todo item".
 
+Print "===="
+
+Then, use the "mark todo item as completed" function for the second item.
+After that, print the second item.
+
+Print "===="
+
+Then, use the "mark todo item as incomplete" function for the first item.
+After that, print the first item.
+
+Print "===="
+
+When all is done, print "Goodbye!".
 

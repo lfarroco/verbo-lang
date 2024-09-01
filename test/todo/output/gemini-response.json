@@ -4,7 +4,7 @@
       "content": {
         "parts": [
           {
-            "text": "```javascript\nconst todos = [\n  { name: 'buy bread', dueTo: '01/01/2025', completed: true },\n  { name: 'buy milk', dueTo: '02/02/2026', completed: false },\n  { name: 'buy eggs', dueTo: '03/03/2027', completed: false },\n  { name: 'buy cheese', dueTo: '04/04/2028', completed: false },\n  { name: 'buy yogurt', dueTo: '05/05/2029', completed: false },\n  { name: 'buy fruit', dueTo: '06/06/2030', completed: false },\n];\n\nfunction printTodoItem(todoItem) {\n  const completionMark = todoItem.completed ? '[x]' : '[ ]';\n  console.log(`${completionMark} ${todoItem.name} - due to ${todoItem.dueTo}`);\n}\n\ntodos.forEach(printTodoItem);\n```"
+            "text": "```typescript\ninterface TodoItem {\n  name: string;\n  dueTo: Date;\n  completed: boolean;\n}\n\nconst todos: TodoItem[] = [\n  { name: 'buy bread', dueTo: new Date('2025-01-01'), completed: true },\n  { name: 'buy milk', dueTo: new Date('2026-02-02'), completed: false },\n  { name: 'buy eggs', dueTo: new Date('2027-03-03'), completed: false },\n  { name: 'buy cheese', dueTo: new Date('2028-04-04'), completed: false },\n  { name: 'buy yogurt', dueTo: new Date('2029-05-05'), completed: false },\n  { name: 'buy water', dueTo: new Date('2030-06-06'), completed: false },\n];\n\nfunction printTodoItem(todo: TodoItem): void {\n  const completedSymbol = todo.completed ? '[x]' : '[ ]';\n  console.log(`${completedSymbol} ${todo.name} - due to ${todo.dueTo.toISOString().slice(0, 10)}`);\n}\n\nfunction markTodoItemAsCompleted(todo: TodoItem): void {\n  todo.completed = true;\n}\n\nfunction markTodoItemAsIncomplete(todo: TodoItem): void {\n  todo.completed = false;\n}\n\ntodos.forEach(printTodoItem);\nconsole.log('====');\n\nmarkTodoItemAsCompleted(todos[1]);\nprintTodoItem(todos[1]);\nconsole.log('====');\n\nmarkTodoItemAsIncomplete(todos[0]);\nprintTodoItem(todos[0]);\nconsole.log('====');\n\nconsole.log('Goodbye!');\n```"
           }
         ],
         "role": "model"
@@ -32,8 +32,8 @@
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 435,
-    "candidatesTokenCount": 243,
-    "totalTokenCount": 678
+    "promptTokenCount": 592,
+    "candidatesTokenCount": 414,
+    "totalTokenCount": 1006
   }
 }

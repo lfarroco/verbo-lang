@@ -35,8 +35,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = compile;
 const fs = __importStar(require("fs"));
 const utils_1 = require("../utils");
+const languageIndex = {
+    js: "JavaScript",
+    py: "Python",
+    ts: "TypeScript",
+    hs: "Haskell",
+    rs: "Rust",
+    go: "Golang",
+};
 function compile(_a) {
-    return __awaiter(this, arguments, void 0, function* ({ outputPath, sourceDir, dotEnvFilePath, targetLanguage = "js", }) {
+    return __awaiter(this, arguments, void 0, function* ({ outputPath, sourceDir, dotEnvFilePath, targetLanguage, }) {
         console.log("Compiling source files...");
         const files = (0, utils_1.getFiles)(sourceDir);
         let compiledFiles = "";
@@ -47,6 +55,7 @@ function compile(_a) {
             const content = fs.readFileSync(file, "utf8");
             compiledFiles += content + "\n\n";
         });
+        const languageName = languageIndex[targetLanguage];
         const prompt = `
 You will receive a list of files describing how a software should work.
 Each file name is delimited by a double equal sign (==).
@@ -58,7 +67,7 @@ this means that you should use the variable declared at the file x.md (not try t
 If the constant is used in multiple places, you may turn it into a function.
 The response should come as a single block of code.
 The code should not be wrapped in backticks.
-The target language is Haskell.
+The target language is ${languageName}.
 `;
         const submitPrompt = `${prompt}\n\n${compiledFiles}`;
         console.log("The prompt:", submitPrompt);
@@ -109,7 +118,7 @@ The target language is Haskell.
             text = text.split("\n").slice(0, -1).join("\n");
         }
         console.log("Writing gemini-main.js to the output folder.");
-        fs.writeFileSync(`${outputPath}/gemini-main.hs`, text);
+        fs.writeFileSync(`${outputPath}/gemini-main.${targetLanguage}`, text);
         console.log('Your code is ready in the target output folder.');
     });
 }

@@ -2,16 +2,27 @@ import * as fs from "fs";
 
 import { getEnv, getFiles } from "../utils";
 
+const languageIndex = {
+  js: "JavaScript",
+  py: "Python",
+  ts: "TypeScript",
+  hs: "Haskell",
+  rs: "Rust",
+  go: "Golang",
+};
+
+type SupportedLanguages = keyof typeof languageIndex;
+
 export default async function compile({
   outputPath,
   sourceDir,
   dotEnvFilePath,
-  targetLanguage = "js",
+  targetLanguage,
 }: {
   outputPath: string;
   sourceDir: string;
   dotEnvFilePath: string;
-  targetLanguage: string;
+  targetLanguage: SupportedLanguages;
 }) {
 
   console.log("Compiling source files...");
@@ -30,6 +41,8 @@ export default async function compile({
     compiledFiles += content + "\n\n";
   });
 
+  const languageName = languageIndex[targetLanguage] as string;
+
   const prompt = `
 You will receive a list of files describing how a software should work.
 Each file name is delimited by a double equal sign (==).
@@ -41,7 +54,7 @@ this means that you should use the variable declared at the file x.md (not try t
 If the constant is used in multiple places, you may turn it into a function.
 The response should come as a single block of code.
 The code should not be wrapped in backticks.
-The target language is JavaScript.
+The target language is ${languageName}.
 `;
   const submitPrompt = `${prompt}\n\n${compiledFiles}`;
 
@@ -111,7 +124,7 @@ The target language is JavaScript.
 
   console.log("Writing gemini-main.js to the output folder.");
 
-  fs.writeFileSync(`${outputPath}/gemini-main.js`, text);
+  fs.writeFileSync(`${outputPath}/gemini-main.${targetLanguage}`, text);
 
   console.log(
     'Your code is ready in the target output folder.'
