@@ -7,7 +7,7 @@ const program = new Command();
 const languagesList = supportedLanguageCodes.join(", ");
 
 program
-  .version("1.0.2")
+  .version("1.0.3")
   .description(
     "A simple programming language that lets you compile code using natural language."
   )

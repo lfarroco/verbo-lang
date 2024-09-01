@@ -74,9 +74,9 @@ The target language is ${languageName}.
         fs.writeFileSync(`${outputPath}/submit.md`, submitPrompt);
         console.log("Submitting code to the AI...");
         // TODO: should be part of the ai provider
-        const GEMINI_KEY = (0, utils_1.getEnv)(dotEnvFilePath, "GEMINI_KEY");
-        const OPENAI_KEY = (0, utils_1.getEnv)(dotEnvFilePath, "OPENAI_KEY");
-        const provider = aiProvider === "gemini" ? (0, gemini_1.gemini)(GEMINI_KEY) : (0, openai_1.openai)(OPENAI_KEY);
+        const provider = aiProvider === "gemini" ?
+            (0, gemini_1.gemini)((0, utils_1.getEnv)(dotEnvFilePath, "GEMINI_KEY")) :
+            (0, openai_1.openai)((0, utils_1.getEnv)(dotEnvFilePath, "OPENAI_KEY"));
         let text = yield provider(submitPrompt);
         // Google Gemini (sometimes) is returning the code wrapped in backticks besides the prompt
         // check if first line has "```"
@@ -90,7 +90,7 @@ The target language is ${languageName}.
             console.log("Removing last line as it has backticks.");
             text = text.split("\n").slice(0, -1).join("\n");
         }
-        console.log("Writing gemini-main.js to the output folder.");
+        console.log(`Writing ${aiProvider}-main.js to the output folder.`);
         fs.writeFileSync(`${outputPath}/${aiProvider}-main.${targetLanguage}`, text);
         console.log('Your code is ready in the target output folder.');
     });

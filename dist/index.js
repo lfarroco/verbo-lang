@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -9,7 +10,7 @@ const constants_1 = require("./constants");
 const program = new commander_1.Command();
 const languagesList = constants_1.supportedLanguageCodes.join(", ");
 program
-    .version("0.0.1")
+    .version("1.0.2")
     .description("A simple programming language that lets you compile code using natural language.")
     .option("-o, --output <value>", "Target output directory")
     .option("-t, --target [value]", `Target language. Valid options: ${languagesList}. Default: js`)
