@@ -256,11 +256,11 @@ We also have support for Gemini and OpenAi, provided that you have an API key.
 For those providers, create a `.env` with `GEMINI_KEY=...` or `OPENAI_KEY=...` entries, depending on the provider.
 You can get a free API key for Gemini at https://aistudio.google.com/app/apikey.
 
-Install the cli:
+As this is still experimental, we don't have a npm package yet. To try, clone this repo then run:
 
-`npm install -g verbo-lang` 
+`npm i -g` 
 
-Run it with `verbo`.
+Then, run it with `verbo`.
 
 By default, the cli reads all `.md` files in the `source` directory. Having a `main.md` file is required.
 The generated files will be placed in the `dist` directory.
