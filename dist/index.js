@@ -15,7 +15,7 @@ program
     .option("-e, --envfile <value>", "Path to .env file. Default: .env")
     .option("-s, --source <value>", "Path to source directory. Default: source/")
     .option("-ai, --aiprovider <value>", "AI provider. Default: ollama")
-    .option("-m, --model <value>", "AI model. Defaults: gpt-3.5-turbo for OpenAI, llama3.1 for Ollama, gemini-1.5-flash-latest for Gemini")
+    .option("-m, --model <value>", "AI model. Defaults: gpt-3.5-turbo for OpenAI, codegemma for Ollama, gemini-1.5-flash-latest for Gemini")
     .parse(process.argv);
 const pwd = process.cwd();
 const options = program.opts();
@@ -44,7 +44,7 @@ const aiProvider = options.aiprovider || "ollama";
 const defaultModels = {
     gemini: "gemini-1.5-flash-latest",
     openai: "gpt-4o",
-    ollama: "llama3.1",
+    ollama: "codegemma",
 };
 const model = options.model || defaultModels[aiProvider];
 if (["gemini", "openai", "ollama"].indexOf(aiProvider) === -1) {

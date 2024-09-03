@@ -2,9 +2,9 @@ type State = {
   todos: Todo[];
 };
 
-type Todo = {
+export type Todo = {
   name: string;
-  dueTo: string;
+  dueDate: string;
   completed: boolean;
 };
 
@@ -15,21 +15,24 @@ export function main(
   }
 ): number {
   const state = { ...initialState }; // shallow copy of the initial state
+
+  // Constants
   const todos = [
-    { name: "buy bread", dueTo: "01/01/2025", completed: true },
-    { name: "buy milk", dueTo: "02/02/2026", completed: false },
-    { name: "buy cheese", dueTo: "03/03/2027", completed: false },
-    { name: "buy eggs", dueTo: "04/04/2028", completed: false },
-    { name: "buy juice", dueTo: "05/05/2029", completed: false },
-    { name: "buy water", dueTo: "06/06/2030", completed: false },
+    { name: "buy bread", dueDate: "01/01/2025", completed: true },
+    { name: "buy milk", dueDate: "02/02/2026", completed: false },
+    { name: "buy eggs", dueDate: "03/03/2027", completed: false },
+    { name: "buy cheese", dueDate: "04/04/2028", completed: false },
+    { name: "buy yogurt", dueDate: "05/05/2029", completed: false },
+    { name: "buy butter", dueDate: "06/06/2030", completed: false },
+    { name: "buy jam", dueDate: "07/07/2031", completed: false },
   ];
 
-  state.todos = todos;
-
+  // Functions
   function printTodoItem(todo: Todo): void {
-    const completedIndicator = todo.completed ? "x" : " ";
-    const todoString = `[${completedIndicator}] ${todo.name} - due to ${todo.dueTo}`;
-    ports.print(todoString);
+    const completedSymbol = todo.completed ? "x" : " ";
+    ports.print(
+      `[${completedSymbol}] ${todo.name} - due to ${todo.dueDate}`
+    );
   }
 
   function markTodoItemAsCompleted(todo: Todo): void {
@@ -47,7 +50,11 @@ export function main(
     }
   }
 
-  state.todos.forEach((todo) => printTodoItem(todo));
+  // Logic
+
+  state.todos.forEach((todo) => {
+    printTodoItem(todo);
+  });
 
   ports.print(`The number of todos is: ${state.todos.length}`);
 
@@ -55,14 +62,12 @@ export function main(
   markTodoItemAsCompleted(state.todos[1]);
   printTodoItem(state.todos[1]);
 
-  ports.print("== the first todo will be updated (incomplete) ==");
+  ports.print("== the first todo will be updated (incomplete)==");
   markTodoItemAsIncomplete(state.todos[0]);
   printTodoItem(state.todos[0]);
 
   removeTodoItem(state.todos[0]);
-
   ports.print("== the first will be removed ==");
-
   ports.print(`The number of todos is: ${state.todos.length}`);
 
   ports.print("====");

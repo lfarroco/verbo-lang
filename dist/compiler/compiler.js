@@ -73,6 +73,7 @@ Your Output:
  - A main function that initializes and runs the software.
  - No use of external libraries or dependencies.
  - Complex operations (like running a server) should be handled via the provided ports.
+ - The main function is only declared and exported, not executed.
 
 The main Function:
 Parameters:
