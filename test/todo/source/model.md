@@ -18,3 +18,6 @@ Here are some functions that allow interacting with a todo item:
 
 - mark todo item as incomplete:
   This function changes the completed property of the todo item to False.
+
+- remove todo item:
+  This function removes a todo item from the list of todos.

@@ -18,7 +18,7 @@ const openai = (key, model) => (prompt) => __awaiter(void 0, void 0, void 0, fun
             "Authorization": `Bearer ${key}`
         },
         body: JSON.stringify({
-            model, // TODO: add "model" param
+            model,
             messages: [
                 { role: "user", content: prompt }
             ]

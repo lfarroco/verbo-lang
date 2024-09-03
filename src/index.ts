@@ -4,7 +4,7 @@ import compile from "./compiler/compiler";
 const program = new Command();
 
 program
-  .version("1.0.4")
+  .version("0.0.1")
   .description(
     "A simple programming language that lets you compile code using natural language."
   )
@@ -71,7 +71,6 @@ console.log(`Compiling to ${targetLanguage}...`);
 
 compile({
   outputPath,
-  targetLanguage,
   sourceDir,
   dotEnvFilePath,
   aiProvider,

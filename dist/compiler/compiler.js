@@ -35,12 +35,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = compile;
 const fs = __importStar(require("fs"));
 const utils_1 = require("../utils");
-const constants_1 = require("../constants");
 const openai_1 = require("../api/openai");
 const gemini_1 = require("../api/gemini");
 const ollama_1 = require("../api/ollama");
 function compile(_a) {
-    return __awaiter(this, arguments, void 0, function* ({ outputPath, sourceDir, dotEnvFilePath, targetLanguage, aiProvider, model, }) {
+    return __awaiter(this, arguments, void 0, function* ({ outputPath, sourceDir, dotEnvFilePath, aiProvider, model, }) {
         console.log("Compiling source files...");
         const files = (0, utils_1.getFiles)(sourceDir);
         let compiledFiles = "";
@@ -52,66 +51,76 @@ function compile(_a) {
             compiledFiles += content + "\n\n";
         });
         //console.log("Compiled files:", compiledFiles);
-        const maybeLanguageName = constants_1.supportedLanguages[targetLanguage.toLowerCase()];
-        const languageName = maybeLanguageName ? maybeLanguageName : targetLanguage;
         //TODO: have different examples for different languages
-        //TODO: if generating java, use "class" instead of "function"
         const prompt = `
+Your task is to generate a TypeScript program based on the functionality described across a series of virtual files.
+These files contain descriptions in "Verbo," an abstract programming language that allows software to be specified using natural language.
 
-Your task is to generate a program that implements the functionality
-described in a series of virtual files. 
-Each file name is delimited by double equal signs (==).
-These virtual files are from "Verbo", a programming language that allows describing
-software with natural language.
-Software described in Verbo has the following properties:
-- A single mutable state that holds all the data
-- Events that can change the state
-- Constants
-- Functions
-- Objects
-- Types
-- Ports that allow the software to interact with the external world
-All Verbo files are written in Markdown format.
-The output of the program should be a single file that implements the described functionality.
-A single "main" function or class should be generated that will run the software.
-Avoid importing external libraries.
-That "main" function or class should accept the following parameters:
-- An object with parameters that will be used to configure the software
-- An object that will be used to initialize the state
-- An object with port function that can be used by the software
-The intention of the language is allowing the user to create simple, self-contained software.
-One example of such main function that could be generated is:
-export function main(config, initialState, ports) {
-  const url = config.baseUrl + "/users";
-  const state = initialState;
-  // using ports:
+Input Details:
+- Each file name is enclosed by double equal signs (==) as delimiters.
+- The Verbo language enables users to create simple, self-contained software systems described in natural language.
+- Each Verbo file is formatted in Markdown and contains one or more functional descriptions.
+
+Verbo Characteristics:
+- A single mutable state that holds all data.
+- Unique symbols (regardless of case or closure context).
+- Definitions for constants, functions, objects, and types.
+- Ports for external interactions (e.g., I/O operations).
+
+Your Output:
+- Generate a single TypeScript file implementing the described functionality.
+- The generated code should include:
+ - A main function that initializes and runs the software.
+ - No use of external libraries or dependencies.
+ - Complex operations (like running a server) should be handled via the provided ports.
+
+The main Function:
+Parameters:
+- initialState: an optional initial state (null if no state is provided).
+- ports: an object containing functions for external interactions.
+
+Example Output Structure:
+
+type State = {
+  users: User[];
+}
+
+export type User = {
+  name: string;
+}
+
+export function main(
+  initialState: State,
+  ports: {
+    print: (message: string) => void,
+    createUserInDB: (user: User) => void,
+    updateUserInDB: (user: User) => void,
+    getUserFromDB: (id: string) => User
+  }
+): number {
+  const state = { ...initialState }; // shallow copy of the initial state
+  ...
+  function createUser(id: string, name: string) { 
+    const user = { id, name };
+    ports.createUserInDB(user);
+    state.users.push(user); 
+  }
+  createUser("123", "Bob");
+  ...
   ports.print("Hello, world!");
-  ports.updateUser({ name: "Alice" });
-  ports.sendEmail({ to: "", subject: "", body: "" });
-Using those parameters is not obligatory.
-If the target language is object-oriented, "main" will be a class.
-If the target language is functional, "main" will be a function.
-Multiparadigm languages will have the choice of using a class or a function.
-The generated "main" function should be exposed to make it importable by other code, so that the user
-may use it in their own codebase.
+  ports.updateUserInDB({ id: "11", name: "Alice" });
+  const user = ports.getUserFromDB("123");
+  ...
+  return "completed!" // only return a value if specified by the user in the Verbo files
+}
 
-Starting from the file "main.md", generate code that implements the described software.
-The generated code should represent a single ouput file that can be run in the target language.
-
-If the code description says something like "... generate n items", or "generate n random items",
-it means that you should generate data that fits that context.
-
-As the Verbo language is language-agnostice, you may use any language constructs
-that will be appropriate to implement the described functionality.
-For example, if the description defines an "object", you are free to use a class, 
-struct or dictionary depending on what will be more convenient in the target language.
-The target programming language is ${languageName}.
-The response should come as a single block of code.
-It is very important that the generated response contains only code.
-If you want to add an explanation, use comments.
-The code should not be wrapped in backticks.
-After the code is generated, it will be fed into a formatter and linter, so ensure
-that no illegal artifacts are present.
+Key Guidelines:
+- State Mutability: The local state is mutable, but all side effects should be managed through the provided ports.
+- Encapsulation: Place all functions, constants, and variables within the main function to ensure encapsulation.
+- Handling Ambiguity: If any Verbo descriptions are ambiguous or incomplete, make reasonable assumptions and document them in comments.
+- Processing Order: Evaluate all provided files as one logical unit, ensuring that the main function can run without errors.
+- Final Output: The generated TypeScript code should be a single, well-formatted file, suitable for immediate integration and further linting.
+Starting from the file "main.md", generate the required code that fully implements the described software.
 `;
         const submitPrompt = `${prompt}\n\n${compiledFiles}`;
         console.log("The prompt:", submitPrompt);
@@ -119,8 +128,8 @@ that no illegal artifacts are present.
         if (!fs.existsSync(outputPath)) {
             fs.mkdirSync(outputPath);
         }
-        console.log("Writing submit.md prompt to output folder."); // TODO: include ai provider in the name
-        fs.writeFileSync(`${outputPath}/submit.md`, submitPrompt);
+        console.log("Writing prompt.md to output folder. It contains the prompt sent to the AI provider."); // TODO: include ai provider in the name
+        fs.writeFileSync(`${outputPath}/prompt.md`, submitPrompt);
         console.log("Submitting code to the AI...");
         // TODO: should be part of the ai provider
         const getProvider = () => {
@@ -145,9 +154,10 @@ that no illegal artifacts are present.
             console.log("Removing last line as it has backticks.");
             text = text.split("\n").slice(0, -1).join("\n");
         }
-        console.log(`Writing ${aiProvider}-main.${targetLanguage} to the output folder.`);
-        fs.writeFileSync(`${outputPath}/${aiProvider}-main.${targetLanguage}`, text);
+        console.log(`Writing ${aiProvider}-ts-main.ts to the output folder.`);
+        fs.writeFileSync(`${outputPath}/${aiProvider}-ts-main.ts`, text);
         console.log('Your code is ready in the target output folder.');
+        // TODO: feed into formatter and linter, on error, feed it another prompt
     });
 }
 //# sourceMappingURL=compiler.js.map

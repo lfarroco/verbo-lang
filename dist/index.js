@@ -8,7 +8,7 @@ const commander_1 = require("commander");
 const compiler_1 = __importDefault(require("./compiler/compiler"));
 const program = new commander_1.Command();
 program
-    .version("1.0.3")
+    .version("0.0.1")
     .description("A simple programming language that lets you compile code using natural language.")
     .option("-o, --output <value>", "Target output directory")
     .option("-t, --target [value]", `Target language. Default: js`)
@@ -54,7 +54,6 @@ console.log("using: ", { outputPath, targetLanguage, sourceDir, dotEnvFilePath }
 console.log(`Compiling to ${targetLanguage}...`);
 (0, compiler_1.default)({
     outputPath,
-    targetLanguage,
     sourceDir,
     dotEnvFilePath,
     aiProvider,

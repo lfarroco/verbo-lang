@@ -1,45 +1,4 @@
-import * as fs from "fs";
 
-import { getEnv, getFiles } from "../utils";
-import { openai } from "../api/openai";
-import { gemini } from "../api/gemini";
-import { ollama } from "../api/ollama";
-
-export default async function compile({
-  outputPath,
-  sourceDir,
-  dotEnvFilePath,
-  aiProvider,
-  model,
-}: {
-  outputPath: string;
-  sourceDir: string;
-  dotEnvFilePath: string;
-  aiProvider: string;
-  model: string;
-}) {
-
-  console.log("Compiling source files...");
-
-  const files = getFiles(sourceDir);
-
-  let compiledFiles = "";
-
-  files.forEach((file: string) => {
-
-    // remove absolute file path from the file name
-    const filteredFileName = file.replace(sourceDir + "/", "");
-    compiledFiles += `== ${filteredFileName} ==\n\n`;
-    const content = fs.readFileSync(file, "utf8");
-
-    compiledFiles += content + "\n\n";
-  });
-
-  //console.log("Compiled files:", compiledFiles);
-
-  //TODO: have different examples for different languages
-
-  const prompt = `
 Your task is to generate a TypeScript program based on the functionality described across a series of virtual files.
 These files contain descriptions in "Verbo," an abstract programming language that allows software to be specified using natural language.
 
@@ -108,63 +67,75 @@ Key Guidelines:
 - Processing Order: Evaluate all provided files as one logical unit, ensuring that the main function can run without errors.
 - Final Output: The generated TypeScript code should be a single, well-formatted file, suitable for immediate integration and further linting.
 Starting from the file "main.md", generate the required code that fully implements the described software.
-`;
-  const submitPrompt = `${prompt}\n\n${compiledFiles}`;
-
-  console.log("The prompt:", submitPrompt)
-
-  console.log(`Preparing output folder at ${outputPath}`);
-
-  if (!fs.existsSync(outputPath)) {
-    fs.mkdirSync(outputPath);
-  }
-
-  console.log("Writing prompt.md to output folder. It contains the prompt sent to the AI provider."); // TODO: include ai provider in the name
-  fs.writeFileSync(`${outputPath}/prompt.md`, submitPrompt);
-
-  console.log("Submitting code to the AI...");
-
-  // TODO: should be part of the ai provider
-
-  const getProvider = () => {
-
-    if (aiProvider === "gemini") {
-
-      return gemini(getEnv(dotEnvFilePath, "GEMINI_KEY"), model)
-    } else if (aiProvider === "openai") {
 
 
-      return openai(getEnv(dotEnvFilePath, "OPENAI_KEY"), model)
-    }
+== example-todos.md ==
 
-    return ollama(model);
-  }
+This defines a constant called "todos".
 
-  let text = await getProvider()(submitPrompt)
+It is a list of example todo items.
+All items are not completed, except for the first one.
 
-  // Google Gemini (sometimes) is returning the code wrapped in backticks besides the prompt
-  // check if first line has "```"
-  // if it does, remove it
+todos:
+ - name: buy bread, due to: 01/01/2025
+ - name: buy milk, due to: 02/02/2026
+ ... other 5 example items
 
-  if (text.startsWith("```")) {
-    console.log("Removing first line as it has backticks.");
-    text = text.split("\n").slice(1).join("\n");
-  }
+== model.md ==
 
-  // same for the last line
-  if (text.endsWith("```")) {
-    console.log("Removing last line as it has backticks.");
-    text = text.split("\n").slice(0, -1).join("\n");
-  }
+A "To-Do Item" object has the following properties:
 
-  console.log(`Writing ${aiProvider}-ts-main.ts to the output folder.`);
+- name, a string up to 10 characters
+- due date
+- completed (bool)
 
-  fs.writeFileSync(`${outputPath}/${aiProvider}-ts-main.ts`, text);
+Here are some functions that allow interacting with a todo item:
 
-  console.log(
-    'Your code is ready in the target output folder.'
-  );
+- print todo item:
+  This function prints to the console a string that represents the todo item.
+  The string follows this pattern:
+  "[<if completed, "x", otherwise, just " ">] <name> - due to <due date>"
+  Completed item example: [x] buy bread - due to 2025-01-01
+  Incomplete item example: [ ] buy milk - due to 2026-02-02
 
-  // TODO: feed into formatter and linter, on error, feed it another prompt
+- mark todo item as completed:
+  This function changes the completed property of the todo item to True.
 
-}
+- mark todo item as incomplete:
+  This function changes the completed property of the todo item to False.
+
+- remove todo item:
+  This function removes a todo item from the list of todos.
+
+
+== main.md ==
+
+
+The application state is composed of:
+- A list of todos declared at example-todos.md.
+
+For each todo item, call the function "print todo item".
+
+Print "The number of todos is: x", where x is the total number of todos.
+
+Print "== the second todo will be updated (completed) =="
+
+Then, use the "mark todo item as completed" function on the second item.
+After that, print the second item.
+
+Print "== the first todo will be updated (incomplete)=="
+
+Then, use the "mark todo item as incomplete" function on the first item.
+
+After that, print the first item.
+
+Remove the first item from the list of todos.
+
+Print "== the first will be removed =="
+
+Print "The number of todos is: x", where x is the total number of todos.
+
+Print "===="
+
+When all is done, print "Goodbye!".
+
