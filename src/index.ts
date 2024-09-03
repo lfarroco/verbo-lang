@@ -58,7 +58,12 @@ const outputPath = `${pwd}/${options.output || "dist/"}`;
 const targetLanguage = options.target || "js";
 const sourceDir = `${pwd}/${source}`;
 const dotEnvFilePath = `${pwd}/${envfile}`;
-const aiProvider = options.aiprovider || "gemini";
+
+const aiProvider = options.aiprovider || "ollama";
+
+if (["gemini", "openai", "ollama"].indexOf(aiProvider) === -1) {
+  console.error("Invalid AI provider. Valid options: gemini, openai, ollama");
+}
 
 console.log("using: ", { outputPath, targetLanguage, sourceDir, dotEnvFilePath });
 

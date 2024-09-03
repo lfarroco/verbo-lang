@@ -9,7 +9,7 @@ this means that you should use the variable declared at the file x.md (not try t
 If the constant is used in multiple places, you may turn it into a function.
 The response should come as a single block of code.
 The code should not be wrapped in backticks.
-The target language is Rust.
+The target language is Python.
 
 
 == example-todos.md ==
@@ -56,12 +56,12 @@ For each todo item, call the function "print todo item".
 
 Print "===="
 
-Then, use the "mark todo item as completed" function for the second item.
+Then, use the "mark todo item as completed" function on the second item.
 After that, print the second item.
 
 Print "===="
 
-Then, use the "mark todo item as incomplete" function for the first item.
+Then, use the "mark todo item as incomplete" function on the first item.
 After that, print the first item.
 
 Print "===="

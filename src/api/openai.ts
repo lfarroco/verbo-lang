@@ -8,7 +8,7 @@ export const openai = (key: string) => async (prompt: string): Promise<string> =
 			"Authorization": `Bearer ${key}`
 		},
 		body: JSON.stringify({
-			model: "gpt-4o",
+			model: "gpt-4o", // TODO: add "model" param
 			messages: [
 				{ role: "user", content: prompt }
 			]

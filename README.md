@@ -250,12 +250,13 @@ A basic project looks like this:
 .env
 ```
 
-In your project directory create a `.env` with `GEMINI_KEY=...` or `OPENAI_KEY=...`, depending
-on which AI provider you want to use.
-You can get a free API key for Gemini at https://aistudio.google.com/app/apikey.
-We intend to add more AI providers in the future - including your own personal AI.
+You can run this tool with your local AI using Ollama. 
 
-Then, install the cli:
+We also have support for Gemini and OpenAi, provided that you have an API key.
+For those providers, create a `.env` with `GEMINI_KEY=...` or `OPENAI_KEY=...` entries, depending on the provider.
+You can get a free API key for Gemini at https://aistudio.google.com/app/apikey.
+
+Install the cli:
 
 `npm install -g verbo-lang` 
 
@@ -264,6 +265,8 @@ Run it with `verbo`.
 By default, the cli reads all `.md` files in the `source` directory. Having a `main.md` file is required.
 The generated files will be placed in the `dist` directory.
 Use `--target <lang>` to choose the target language. The default is `js`, but you can choose from `py`, `go`, `java`, `hs`, and others.
+
+To choose which AI provider to use, use the `-ai` option. The default is `ollama`, but you can also choose from `gemini` and `openai`.
 
 You can run `verbo --help` to see all the available options.
 
@@ -372,9 +375,10 @@ If "musician code" is "MOZ", call the "play mozart" function. Otherwise, call th
 - [ ] Define how interfaces should operate
 - [ ] Define interaction with existing code
 - [ ] Define "skills" like HTTP requests, file operations, etc.
-- [ ] Add other AI providers (OpenAI, Llama, your personal AI, etc.)
+- [ ] Add other AI providers (Claude, Llama, your personal AI, etc.)
 - [ ] Feed generated files into a static code analyzer to check for common issues
 - [ ] Add support for more languages
 - [ ] Add support for application types (cli, web api, web app, mobile app)
 - [ ] Generate tests based on the comments
 - [ ] Get the model to analyze the code and suggest improvements
+- [ ] Have the AI generate an AST instead of code, allowing for more focused code generation in a separate step
