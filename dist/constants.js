@@ -11,6 +11,14 @@ exports.supportedLanguages = {
     c: "C",
     java: "Java",
     rb: "Ruby",
+    cpp: "C++",
+    cs: "C#",
+    swift: "Swift",
+    kt: "Kotlin",
+    dart: "Dart",
+    php: "PHP",
+    jsx: "JSX",
+    tsx: "TSX",
 };
 exports.supportedLanguageCodes = Object.keys(exports.supportedLanguages);
 //# sourceMappingURL=constants.js.map

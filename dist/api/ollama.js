@@ -9,27 +9,25 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.openai = void 0;
-const openai = (key, model) => (prompt) => __awaiter(void 0, void 0, void 0, function* () {
-    const response = yield fetch("https://api.openai.com/v1/chat/completions", {
+exports.ollama = void 0;
+const ollama = (model) => (prompt) => __awaiter(void 0, void 0, void 0, function* () {
+    const response = yield fetch("http://localhost:11434/api/generate", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${key}`
         },
         body: JSON.stringify({
-            model, // TODO: add "model" param
-            messages: [
-                { role: "user", content: prompt }
-            ]
+            model,
+            prompt,
+            stream: false,
         })
     });
     const data = yield response.json();
     // check validity of response
-    if (!data.choices || !data.choices[0].message) {
-        throw new Error(`Invalid response from OpenAI: ${JSON.stringify(data, null)}`);
+    if (!data.response) {
+        throw new Error(`Invalid response from Ollama: ${JSON.stringify(data, null)}`);
     }
-    return data.choices[0].message.content;
+    return data.response;
 });
-exports.openai = openai;
-//# sourceMappingURL=openai.js.map
+exports.ollama = ollama;
+//# sourceMappingURL=ollama.js.map

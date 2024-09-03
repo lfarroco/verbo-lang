@@ -1,5 +1,5 @@
 
-export const ollama = async (prompt: string): Promise<string> => {
+export const ollama = (model: string) => async (prompt: string): Promise<string> => {
 
 	const response = await fetch("http://localhost:11434/api/generate", {
 		method: "POST",
@@ -7,7 +7,7 @@ export const ollama = async (prompt: string): Promise<string> => {
 			"Content-Type": "application/json",
 		},
 		body: JSON.stringify({
-			model: "llama3.1",
+			model,
 			prompt,
 			stream: false,
 		})

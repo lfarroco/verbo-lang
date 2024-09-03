@@ -10,8 +10,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.gemini = void 0;
-const geminiURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
-const gemini = (key) => (prompt) => __awaiter(void 0, void 0, void 0, function* () {
+const gemini = (key, model) => (prompt) => __awaiter(void 0, void 0, void 0, function* () {
+    const geminiURL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
     const response = yield fetch(`${geminiURL}?key=${key}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

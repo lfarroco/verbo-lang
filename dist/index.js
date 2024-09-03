@@ -6,26 +6,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const commander_1 = require("commander");
 const compiler_1 = __importDefault(require("./compiler/compiler"));
-const constants_1 = require("./constants");
 const program = new commander_1.Command();
-const languagesList = constants_1.supportedLanguageCodes.join(", ");
 program
-    .version("1.0.2")
+    .version("1.0.3")
     .description("A simple programming language that lets you compile code using natural language.")
     .option("-o, --output <value>", "Target output directory")
-    .option("-t, --target [value]", `Target language. Valid options: ${languagesList}. Default: js`)
+    .option("-t, --target [value]", `Target language. Default: js`)
     .option("-e, --envfile <value>", "Path to .env file. Default: .env")
     .option("-s, --source <value>", "Path to source directory. Default: source/")
-    .option("-ai, --aiprovider <value>", "AI provider. Default: gemini")
+    .option("-ai, --aiprovider <value>", "AI provider. Default: ollama")
+    .option("-m, --model <value>", "AI model. Defaults: gpt-3.5-turbo for OpenAI, llama3.1 for Ollama, gemini-1.5-flash-latest for Gemini")
     .parse(process.argv);
 const pwd = process.cwd();
 const options = program.opts();
-console.log("OPTIONS: ", options);
 if (!options.output) {
     console.log("Using default output directory: /dist");
-}
-if (options.target && !languagesList.includes(options.target)) {
-    console.error(`Invalid target language. Valid options: ${languagesList}`);
 }
 if (!options.target) {
     console.log("Using default target language: js");
@@ -45,7 +40,16 @@ const outputPath = `${pwd}/${options.output || "dist/"}`;
 const targetLanguage = options.target || "js";
 const sourceDir = `${pwd}/${source}`;
 const dotEnvFilePath = `${pwd}/${envfile}`;
-const aiProvider = options.aiprovider || "gemini";
+const aiProvider = options.aiprovider || "ollama";
+const defaultModels = {
+    gemini: "gemini-1.5-flash-latest",
+    openai: "gpt-4o",
+    ollama: "llama3.1",
+};
+const model = options.model || defaultModels[aiProvider];
+if (["gemini", "openai", "ollama"].indexOf(aiProvider) === -1) {
+    console.error("Invalid AI provider. Valid options: gemini, openai, ollama");
+}
 console.log("using: ", { outputPath, targetLanguage, sourceDir, dotEnvFilePath });
 console.log(`Compiling to ${targetLanguage}...`);
 (0, compiler_1.default)({
@@ -54,5 +58,6 @@ console.log(`Compiling to ${targetLanguage}...`);
     sourceDir,
     dotEnvFilePath,
     aiProvider,
+    model,
 });
 //# sourceMappingURL=index.js.map

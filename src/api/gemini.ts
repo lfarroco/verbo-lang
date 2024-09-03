@@ -1,6 +1,7 @@
-const geminiURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
 
-export const gemini = (key: string) => async (prompt: string): Promise<string> => {
+export const gemini = (key: string, model: string) => async (prompt: string): Promise<string> => {
+
+	const geminiURL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
 
 	const response = await fetch(
 		`${geminiURL}?key=${key}`,

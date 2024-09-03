@@ -38,8 +38,9 @@ const utils_1 = require("../utils");
 const constants_1 = require("../constants");
 const openai_1 = require("../api/openai");
 const gemini_1 = require("../api/gemini");
+const ollama_1 = require("../api/ollama");
 function compile(_a) {
-    return __awaiter(this, arguments, void 0, function* ({ outputPath, sourceDir, dotEnvFilePath, targetLanguage, aiProvider, }) {
+    return __awaiter(this, arguments, void 0, function* ({ outputPath, sourceDir, dotEnvFilePath, targetLanguage, aiProvider, model, }) {
         console.log("Compiling source files...");
         const files = (0, utils_1.getFiles)(sourceDir);
         let compiledFiles = "";
@@ -50,19 +51,67 @@ function compile(_a) {
             const content = fs.readFileSync(file, "utf8");
             compiledFiles += content + "\n\n";
         });
-        const languageName = constants_1.supportedLanguages[targetLanguage];
+        //console.log("Compiled files:", compiledFiles);
+        const maybeLanguageName = constants_1.supportedLanguages[targetLanguage.toLowerCase()];
+        const languageName = maybeLanguageName ? maybeLanguageName : targetLanguage;
+        //TODO: have different examples for different languages
+        //TODO: if generating java, use "class" instead of "function"
         const prompt = `
-You will receive a list of files describing how a software should work.
-Each file name is delimited by a double equal sign (==).
-Starting from the file "main.md", generate code that will implement the software.
-If the code description says something in the lines of "... generate n items", or "generate n random items",
- it means that you should generate data that fits that context.
-If the description says something in the lines of "using the constant/variable declared at some_file.md",
-this means that you should use the variable declared at the file x.md (not try to import it).
-If the constant is used in multiple places, you may turn it into a function.
+
+Your task is to generate a program that implements the functionality
+described in a series of virtual files. 
+Each file name is delimited by double equal signs (==).
+These virtual files are from "Verbo", a programming language that allows describing
+software with natural language.
+Software described in Verbo has the following properties:
+- A single mutable state that holds all the data
+- Events that can change the state
+- Constants
+- Functions
+- Objects
+- Types
+- Ports that allow the software to interact with the external world
+All Verbo files are written in Markdown format.
+The output of the program should be a single file that implements the described functionality.
+A single "main" function or class should be generated that will run the software.
+Avoid importing external libraries.
+That "main" function or class should accept the following parameters:
+- An object with parameters that will be used to configure the software
+- An object that will be used to initialize the state
+- An object with port function that can be used by the software
+The intention of the language is allowing the user to create simple, self-contained software.
+One example of such main function that could be generated is:
+export function main(config, initialState, ports) {
+  const url = config.baseUrl + "/users";
+  const state = initialState;
+  // using ports:
+  ports.print("Hello, world!");
+  ports.updateUser({ name: "Alice" });
+  ports.sendEmail({ to: "", subject: "", body: "" });
+Using those parameters is not obligatory.
+If the target language is object-oriented, "main" will be a class.
+If the target language is functional, "main" will be a function.
+Multiparadigm languages will have the choice of using a class or a function.
+The generated "main" function should be exposed to make it importable by other code, so that the user
+may use it in their own codebase.
+
+Starting from the file "main.md", generate code that implements the described software.
+The generated code should represent a single ouput file that can be run in the target language.
+
+If the code description says something like "... generate n items", or "generate n random items",
+it means that you should generate data that fits that context.
+
+As the Verbo language is language-agnostice, you may use any language constructs
+that will be appropriate to implement the described functionality.
+For example, if the description defines an "object", you are free to use a class, 
+struct or dictionary depending on what will be more convenient in the target language.
+The target programming language is ${languageName}.
 The response should come as a single block of code.
+It is very important that the generated response contains only code.
+If you want to add an explanation, use comments.
 The code should not be wrapped in backticks.
-The target language is ${languageName}.
+After the code is generated, it will be fed into a formatter and linter, so ensure
+that no illegal artifacts are present.
 `;
         const submitPrompt = `${prompt}\n\n${compiledFiles}`;
         console.log("The prompt:", submitPrompt);
@@ -74,10 +123,16 @@ The target language is ${languageName}.
         fs.writeFileSync(`${outputPath}/submit.md`, submitPrompt);
         console.log("Submitting code to the AI...");
         // TODO: should be part of the ai provider
-        const provider = aiProvider === "gemini" ?
-            (0, gemini_1.gemini)((0, utils_1.getEnv)(dotEnvFilePath, "GEMINI_KEY")) :
-            (0, openai_1.openai)((0, utils_1.getEnv)(dotEnvFilePath, "OPENAI_KEY"));
-        let text = yield provider(submitPrompt);
+        const getProvider = () => {
+            if (aiProvider === "gemini") {
+                return (0, gemini_1.gemini)((0, utils_1.getEnv)(dotEnvFilePath, "GEMINI_KEY"), model);
+            }
+            else if (aiProvider === "openai") {
+                return (0, openai_1.openai)((0, utils_1.getEnv)(dotEnvFilePath, "OPENAI_KEY"), model);
+            }
+            return (0, ollama_1.ollama)(model);
+        };
+        let text = yield getProvider()(submitPrompt);
         // Google Gemini (sometimes) is returning the code wrapped in backticks besides the prompt
         // check if first line has "```"
         // if it does, remove it
@@ -90,7 +145,7 @@ The target language is ${languageName}.
             console.log("Removing last line as it has backticks.");
             text = text.split("\n").slice(0, -1).join("\n");
         }
-        console.log(`Writing ${aiProvider}-main.js to the output folder.`);
+        console.log(`Writing ${aiProvider}-main.${targetLanguage} to the output folder.`);
         fs.writeFileSync(`${outputPath}/${aiProvider}-main.${targetLanguage}`, text);
         console.log('Your code is ready in the target output folder.');
     });

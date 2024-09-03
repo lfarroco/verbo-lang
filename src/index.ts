@@ -1,10 +1,7 @@
 import { Command } from "commander";
 import compile from "./compiler/compiler";
-import { supportedLanguageCodes } from "./constants";
 
 const program = new Command();
-
-const languagesList = supportedLanguageCodes.join(", ");
 
 program
   .version("1.0.3")
@@ -14,25 +11,20 @@ program
   .option("-o, --output <value>", "Target output directory")
   .option(
     "-t, --target [value]",
-    `Target language. Valid options: ${languagesList}. Default: js`
+    `Target language. Default: js`
   )
   .option("-e, --envfile <value>", "Path to .env file. Default: .env")
   .option("-s, --source <value>", "Path to source directory. Default: source/")
-  .option("-ai, --aiprovider <value>", "AI provider. Default: gemini")
+  .option("-ai, --aiprovider <value>", "AI provider. Default: ollama")
+  .option("-m, --model <value>", "AI model. Defaults: gpt-3.5-turbo for OpenAI, llama3.1 for Ollama, gemini-1.5-flash-latest for Gemini")
   .parse(process.argv);
 
 const pwd = process.cwd();
 
 const options = program.opts();
 
-console.log("OPTIONS: ", options)
-
 if (!options.output) {
   console.log("Using default output directory: /dist");
-}
-
-if (options.target && !languagesList.includes(options.target)) {
-  console.error(`Invalid target language. Valid options: ${languagesList}`);
 }
 
 if (!options.target) {
@@ -61,6 +53,14 @@ const dotEnvFilePath = `${pwd}/${envfile}`;
 
 const aiProvider = options.aiprovider || "ollama";
 
+const defaultModels: { [key: string]: string } = {
+  gemini: "gemini-1.5-flash-latest",
+  openai: "gpt-4o",
+  ollama: "llama3.1",
+}
+
+const model = options.model || defaultModels[aiProvider];
+
 if (["gemini", "openai", "ollama"].indexOf(aiProvider) === -1) {
   console.error("Invalid AI provider. Valid options: gemini, openai, ollama");
 }
@@ -75,4 +75,5 @@ compile({
   sourceDir,
   dotEnvFilePath,
   aiProvider,
+  model,
 });

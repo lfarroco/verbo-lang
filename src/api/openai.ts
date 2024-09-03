@@ -1,5 +1,5 @@
 
-export const openai = (key: string) => async (prompt: string): Promise<string> => {
+export const openai = (key: string, model: string) => async (prompt: string): Promise<string> => {
 
 	const response = await fetch("https://api.openai.com/v1/chat/completions", {
 		method: "POST",
@@ -8,7 +8,7 @@ export const openai = (key: string) => async (prompt: string): Promise<string> =
 			"Authorization": `Bearer ${key}`
 		},
 		body: JSON.stringify({
-			model: "gpt-4o", // TODO: add "model" param
+			model,
 			messages: [
 				{ role: "user", content: prompt }
 			]

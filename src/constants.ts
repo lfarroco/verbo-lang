@@ -9,7 +9,15 @@ export const supportedLanguages = {
 	c: "C",
 	java: "Java",
 	rb: "Ruby",
-};
+	cpp: "C++",
+	cs: "C#",
+	swift: "Swift",
+	kt: "Kotlin",
+	dart: "Dart",
+	php: "PHP",
+	jsx: "JSX",
+	tsx: "TSX",
+} as { [key: string]: string };
 
 export type supportedLanguageCode = keyof typeof supportedLanguages;
 
