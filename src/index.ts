@@ -4,7 +4,7 @@ import compile from "./compiler/compiler";
 const program = new Command();
 
 program
-  .version("1.0.3")
+  .version("1.0.4")
   .description(
     "A simple programming language that lets you compile code using natural language."
   )

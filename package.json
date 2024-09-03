@@ -1,6 +1,6 @@
 {
   "name": "verbo-lang",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Create software using natual language",
   "main": "dist/index.js",
   "directories": {
