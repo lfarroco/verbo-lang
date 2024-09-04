@@ -18,7 +18,6 @@ export default async function compile({
   aiProvider: string;
   model: string;
 }) {
-
   console.log("Compiling source files...");
 
   const files = getFiles(sourceDir);
@@ -26,7 +25,6 @@ export default async function compile({
   let compiledFiles = "";
 
   files.forEach((file: string) => {
-
     // remove absolute file path from the file name
     const filteredFileName = file.replace(sourceDir + "/", "");
     compiledFiles += `== ${filteredFileName} ==\n\n`;
@@ -34,10 +32,6 @@ export default async function compile({
 
     compiledFiles += content + "\n\n";
   });
-
-  //console.log("Compiled files:", compiledFiles);
-
-  //TODO: have different examples for different languages
 
   const prompt = `
 Your task is to generate a TypeScript program based on the functionality described across a series of virtual files.
@@ -61,11 +55,13 @@ Your Output:
  - No use of external libraries or dependencies.
  - Complex operations (like running a server) should be handled via the provided ports.
  - The main function is only declared and exported, not executed.
+- The response should be formatted as Markdown, with code enclosed in triple backticks (\`\`\`) for easy integration.
 
 The main Function:
 Parameters:
 - initialState: an optional initial state (null if no state is provided).
 - ports: an object containing functions for external interactions.
+The main function may return a value if specified in the Verbo files.
 
 Example Output Structure:
 
@@ -85,9 +81,9 @@ export function main(
     updateUserInDB: (user: User) => void,
     getUserFromDB: (id: string) => User
   }
-): number {
+): string {
   const state = { ...initialState }; // shallow copy of the initial state
-  ...
+  // Exemple internal function
   function createUser(id: string, name: string) { 
     const user = { id, name };
     ports.createUserInDB(user);
@@ -103,16 +99,17 @@ export function main(
 }
 
 Key Guidelines:
-- State Mutability: The local state is mutable, but all side effects should be managed through the provided ports.
+- State Mutability: The local state is mutable, but all other side effects should be managed through the provided ports.
 - Encapsulation: Place all functions, constants, and variables within the main function to ensure encapsulation.
 - Handling Ambiguity: If any Verbo descriptions are ambiguous or incomplete, make reasonable assumptions and document them in comments.
 - Processing Order: Evaluate all provided files as one logical unit, ensuring that the main function can run without errors.
 - Final Output: The generated TypeScript code should be a single, well-formatted file, suitable for immediate integration and further linting.
+
 Starting from the file "main.md", generate the required code that fully implements the described software.
 `;
   const submitPrompt = `${prompt}\n\n${compiledFiles}`;
 
-  console.log("The prompt:", submitPrompt)
+  console.log("The prompt:", submitPrompt);
 
   console.log(`Preparing output folder at ${outputPath}`);
 
@@ -120,7 +117,9 @@ Starting from the file "main.md", generate the required code that fully implemen
     fs.mkdirSync(outputPath);
   }
 
-  console.log("Writing prompt.md to output folder. It contains the prompt sent to the AI provider."); // TODO: include ai provider in the name
+  console.log(
+    "Writing prompt.md to output folder. It contains the prompt sent to the AI provider."
+  ); // TODO: include ai provider in the name
   fs.writeFileSync(`${outputPath}/prompt.md`, submitPrompt);
 
   console.log("Submitting code to the AI...");
@@ -128,44 +127,30 @@ Starting from the file "main.md", generate the required code that fully implemen
   // TODO: should be part of the ai provider
 
   const getProvider = () => {
-
     if (aiProvider === "gemini") {
-
-      return gemini(getEnv(dotEnvFilePath, "GEMINI_KEY"), model)
+      return gemini(getEnv(dotEnvFilePath, "GEMINI_KEY"), model);
     } else if (aiProvider === "openai") {
-
-
-      return openai(getEnv(dotEnvFilePath, "OPENAI_KEY"), model)
+      return openai(getEnv(dotEnvFilePath, "OPENAI_KEY"), model);
     }
 
     return ollama(model);
-  }
+  };
 
-  let text = await getProvider()(submitPrompt)
+  let text = await getProvider()(submitPrompt);
 
-  // Google Gemini (sometimes) is returning the code wrapped in backticks besides the prompt
-  // check if first line has "```"
-  // if it does, remove it
+  // the code will be wrapped in backticks, so we need to get the middle part
+  //
+  //
 
-  if (text.startsWith("```")) {
-    console.log("Removing first line as it has backticks.");
-    text = text.split("\n").slice(1).join("\n");
-  }
-
-  // same for the last line
-  if (text.endsWith("```")) {
-    console.log("Removing last line as it has backticks.");
-    text = text.split("\n").slice(0, -1).join("\n");
-  }
+  fs.writeFileSync(`${outputPath}/${aiProvider}-response.md`, text);
+  text = text.replace("```typescript", "");
+  text = text.split("```")[1];
 
   console.log(`Writing ${aiProvider}-ts-main.ts to the output folder.`);
 
   fs.writeFileSync(`${outputPath}/${aiProvider}-ts-main.ts`, text);
 
-  console.log(
-    'Your code is ready in the target output folder.'
-  );
+  console.log("Your code is ready in the target output folder.");
 
   // TODO: feed into formatter and linter, on error, feed it another prompt
-
 }

@@ -11,6 +11,8 @@
   },
   "scripts": {
     "build": "npx tsc",
+    "prepare": "npm run build && npm run add-shebang",
+    "add-shebang": "node ./scripts/add-shebang.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "patch-release": "npm version patch && npm publish && git push --follow-tags"
   },

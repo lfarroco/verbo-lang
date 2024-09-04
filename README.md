@@ -1,7 +1,6 @@
 # verbo-lang
 Create software using natural language
 
-
 ## Table of Contents
 
 - [Demo](#demo)
@@ -10,6 +9,8 @@ Create software using natural language
 - [Roadmap](#roadmap)
 
 ## Demo
+
+(the language is still in its early stages, so the API is still subject to change)
 
 Given a directory with three markdown files, `model.md`, `example-todos.md`, and `main.md`, with the following contents:
 
@@ -221,6 +222,26 @@ main = do
   putStrLn "Goodbye!"
 ```
 
+## How it works
+
+This compiler works by collecting all .md files with the "source" and providing it to an LLM, alongside some template code
+that follows these key rules, among others:
+
+- self-contained
+- with optional mutable local state
+- side-effects handled with "port" functions
+
+The .md files are compiled into TypeScript, which we use as an "AST" of sorts. Why TypeScript? It has types, is multiparadigm, and is a good middle ground between OOP/functional languages. Also, there are lots of parsers/linters/testing tools for TypeScript that we can include in our pipeline.
+Another factor is that the existing AIs are heavily trained on this language.
+
+Then, a new prompt is generated, asking the AI to convert the TypeScript code into the target language, respecting the target's syntax and conventions.
+
+I'm changing it to not target specific languages directly, but instead compile to typescript and use .ts as an AST. why? typescript has types and is multiparadigm, so it's a good middle ground. As there's lots of parsers/linters for ts, we can take advantage of that. Also AIs are heavily trained on ts. If the user wants java, I believe that it will be easier to make ts -> java instead of going from md -> java
+the idea is having a small Elm-like thing that lets people build self-contained software
+it can run under different ai providers (openai, gemini, ollama local models), and it was interesting to learn that gemini has free API keys and ollama models run surprisingly well locally (just download 4gb and you are set)
+The next goals are generating tests, then handling adding changes to existing compiled code. And make the compiler self-hosted (written in verbo itself).
+over time it should be possible to add skills/modes/plugins to it, enabling it to create cli apps, servers with routes - who knows! 
+
 ## Reasoning
 
 In the past few years, there has been a lot of progress in the field of Natural Language
@@ -282,19 +303,21 @@ same time documentation and code.
 
 ### Constants/Variables
 
-You can use direct assignment:
-
-```verbo
-name: "John"
-age: 25
-```
-or signal that a variable exists:
+You can declare that a variable exists:
 ```
 Use a constant called FILE_PATH to store the path to the configuration file.
 Use a variable called "address" to store the user's address.
 ```
+Verbo variable are available are available anywhere in the program. 
+You can also use direct assignment if you want to:
 
-Later, you can use the variable like this:
+```
+name: "John"
+age: 25
+```
+
+Later, reference the declared variable to access it:
+
 ```
 Log the FILE_PATH variable to the console.
 Call the "navigate" function, passing the "address" variable as a parameter.
@@ -306,12 +329,18 @@ You can define lists like this:
 
 ```
 names:
-  - John
-  - Mary
-  - Peter
+- John
+- Mary
+- Peter
 ```
 
-Or use natural language:
+If you want to use a more traditional approach, it will work as well:
+
+```
+This is constant called "fruits", which is composed of ["apple", "banana", "pear"].
+```
+
+You can also ask the AI to generate data:
 
 ```
 The list "test foods" contains the following items:
@@ -320,20 +349,12 @@ The list "test foods" contains the following items:
   - carrot
   ... and other 10 random items
 ```
+This is useful for defining test cases.
 
-This is useful for defining test data.
 
 ### Objects
 
-You can define objects like this:
-
-```
-person:
-  name: "John"
-  age: 25
-```
-
-Or use natural language:
+Objects can be defined like this:
 
 ```
 A "Person" object has the following properties:
@@ -351,6 +372,14 @@ A "Person" object has the following properties:
   - "is student", a boolean
 ```
 
+A more traditional approach is also valid:
+
+```
+person:
+  name: "John"
+  age: 25
+```
+
 ### Functions
 
 You can define functions like this:
@@ -361,24 +390,30 @@ It receives two parameters, "a" and "b".
 It returns the sum of "a" and "b".
 ```
 
+You can also reference more abstract types as arguments:
+
+```
+The function "change user address" receives a "User" object and a "new address" string, and updates the user's address.
+```
+
 ### Conditions
 
-You can define conditions like this:
+Conditions work best if they are short expressions:
 
 ```
 If the variable "age" is higher than 18, return "adult". Otherwise, return "minor".
+
 If "musician code" is "MOZ", call the "play mozart" function. Otherwise, call the "play beethoven" function.
+
+Check the user's "is student" property: 
+- if true, the discount is 50%
+- otherwise, the discount is 0%
 ```
+
+So try to keep them simple - this applies to non-verbo code as well ;
 
 ## Roadmap
 
-- [ ] Define how interfaces should operate
-- [ ] Define interaction with existing code
-- [ ] Define "skills" like HTTP requests, file operations, etc.
-- [ ] Add other AI providers (Claude, Llama, your personal AI, etc.)
-- [ ] Feed generated files into a static code analyzer to check for common issues
-- [ ] Add support for more languages
-- [ ] Add support for application types (cli, web api, web app, mobile app)
-- [ ] Generate tests based on the comments
-- [ ] Get the model to analyze the code and suggest improvements
-- [ ] Have the AI generate an AST instead of code, allowing for more focused code generation in a separate step
+- Allow extending the language with skills "skills" like HTTP requests, file operations, cli generation, etc.
+- Generate tests based on the requirements
+- Get the model to analyze the code and suggest improvements
