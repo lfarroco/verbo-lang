@@ -167,7 +167,10 @@ Starting from the file "main.md", generate the required code that fully implemen
 
   exec(`npx tsc ${outputPath}/index.ts --outDir ${outputPath}`, async (error: any, stdout: any, stderr: any) => {
 
-    if (!error) return
+    if (!error) {
+      console.log("Code has been successfully compiled.");
+      return
+    }
 
     console.log(`The generated code has errors. Asking the AI for fixes...`);
 
