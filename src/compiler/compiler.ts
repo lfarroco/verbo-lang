@@ -147,15 +147,21 @@ Starting from the file "main.md", generate the required code that fully implemen
 
   let text = await getProvider()(submitPrompt);
 
+  console.log(`AI response: ${text} `);
+
   fs.writeFileSync(`${outputPath}/${aiProvider}-response.md`, text);
   text = text.replace("```typescript", "```");
   text = text.split("```")[1];
 
-  console.log(`Writing mainn.ts to the output folder`);
+  console.log("Extracted code from the AI response.");
+
+  console.log(`Writing main.ts to the output folder`);
 
   fs.writeFileSync(`${outputPath}/index.ts`, text);
 
   // compile the generated code
+
+  console.log("Will attempt to compile the generated code.");
 
   const { exec } = require("child_process");
 
@@ -193,13 +199,21 @@ Starting from the file "main.md", generate the required code that fully implemen
 
     fs.writeFileSync(`${outputPath}/${aiProvider}-retry.md`, retryPrompt);
 
-    let retryText = await getProvider()(retryPrompt);
+    let fixResponse = await getProvider()(retryPrompt);
 
-    retryText = retryText.replace("```typescript", "```");
-    retryText = retryText.split("```")[1];
+    console.log(`AI response: ${fixResponse} `);
 
+    fixResponse = fixResponse.replace("```typescript", "```");
+    fixResponse = fixResponse.split("```")[1];
 
-    fs.writeFileSync(`${outputPath}/index.ts`, retryText);
+    console.log("Extracted code from the AI response.");
+
+    console.log(`Writing fixed main.ts to the output folder`);
+
+    fs.writeFileSync(`${outputPath}/index.ts`, fixResponse);
+
+    console.log("Will attempt to compile the fixed code.");
+
     exec(`npx tsc ${outputPath}/index.ts --outDir ${outputPath}`, async (error: any, stdout: any, stderr: any) => {
 
       if (error) {
@@ -209,7 +223,6 @@ Starting from the file "main.md", generate the required code that fully implemen
         console.log("Your code is ready in the target output folder.");
       }
     });
-
 
   })
 

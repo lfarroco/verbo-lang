@@ -39,7 +39,8 @@ The application exposes the following operations to allow manipulating the state
 - mark as completed: receives a todo name and marks it as completed.
 - mark as incomplete: receives a todo name and marks it as incomplete
 
-When "mark as completed" is called, the application should call the "ring bell" port with the todo item name as a parameter.
+When "mark as completed" is called, the application should call the "ring bell"
+port with the todo item name as a parameter.
 ```
 
 The definitions don't need to be in English (check the exemple under `test/todo-pt-br/`).
