@@ -1,28 +1,18 @@
 
+This application will be a long-running process that manages a list of todos.
+
 The application state is composed of:
-- A list of todos declared at example-todos.md.
+- A list of todos received as an argument
 
-For each todo item, call the function "print todo item".
+The application ports are:
+- A function called "ring bell" that receives a string
 
-Print "The number of todos is: x", where x is the total number of todos.
+The application exposes the following operations to allow manipulating the state:
+- get todos: returns all todos
+- add todo: receives a todo name and a due date and adds it to the list
+- remove todo: receives a todo name and removes it from the list
+- update due date: receives a todo name and a new due date and updates the todo
+- mark as completed: receives a todo name and marks it as completed.
+- mask as incomplete: receives a todo name and marks it as incomplete
 
-Print "== the second todo will be updated (completed) =="
-
-Then, use the "mark todo item as completed" function on the second item.
-After that, print the second item.
-
-Print "== the first todo will be updated (incomplete)=="
-
-Then, use the "mark todo item as incomplete" function on the first item.
-
-After that, print the first item.
-
-Remove the first item from the list of todos.
-
-Print "== the first will be removed =="
-
-Print "The number of todos is: x", where x is the total number of todos.
-
-Print "===="
-
-When all is done, print "Goodbye!".
+When "markAsCompleted" is called, the application should call the "ring bell" port with the todo item name as a parameter.

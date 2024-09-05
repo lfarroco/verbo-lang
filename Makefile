@@ -1,20 +1,14 @@
 build:
 	npm run build
 
-lint:
-	npx tsc --noEmit test/todo/dist/*.ts
-
 test-gemini: build
-	node dist/index.js --source test/todo/source --output test/todo/dist  -ai gemini --envfile .env
-	cat test/todo/dist/gemini-ts-main.ts
-	$(MAKE) lint
+	node dist/index.js --source test/todo/source --output test/todo/dist  -ai gemini --envfile .env -v 
 
-test-openapi: build
-	node dist/index.js --source test/todo/source --output test/todo/dist  -ai openapi --envfile .env
-	cat test/todo/dist/openapi-ts-main.ts
-	$(MAKE) lint
+test-anthropic: build
+	node dist/index.js --source test/todo/source --output test/todo/dist  -ai anthropic --envfile .env -v
+
+test-openai: build
+	node dist/index.js --source test/todo/source --output test/todo/dist  -ai openai --envfile .env -v
 
 test-ollama: build
-	node dist/index.js --source test/todo/source --output test/todo/dist  -ai ollama --envfile .env
-	cat test/todo/dist/ollama-ts-main.ts
-	$(MAKE) lint
+	node dist/index.js --source test/todo/source --output test/todo/dist  -ai ollama --envfile .env -v

@@ -4,6 +4,7 @@ import { getEnv, getFiles } from "../utils";
 import { openai } from "../api/openai";
 import { gemini } from "../api/gemini";
 import { ollama } from "../api/ollama";
+import { anthropic } from "../api/anthropic";
 
 export default async function compile({
   outputPath,
@@ -51,56 +52,62 @@ Verbo Characteristics:
 Your Output:
 - Generate a single TypeScript file implementing the described functionality.
 - The generated code should include:
- - A main function that initializes and runs the software.
+ - A main class that initializes and runs the software.
  - No use of external libraries or dependencies.
  - Complex operations (like running a server) should be handled via the provided ports.
- - The main function is only declared and exported, not executed.
+ - The main class is only declared and exported, not executed.
 - The response should be formatted as Markdown, with code enclosed in triple backticks (\`\`\`) for easy integration.
 
-The main Function:
-Parameters:
+The main class:
+Constructor Parameters:
 - initialState: an optional initial state (null if no state is provided).
 - ports: an object containing functions for external interactions.
-The main function may return a value if specified in the Verbo files.
 
 Example Output Structure:
 
-type State = {
+export type State = {
   users: User[];
 }
 
 export type User = {
+  id: string;
   name: string;
 }
 
-export function main(
-  initialState: State,
-  ports: {
-    print: (message: string) => void,
-    createUserInDB: (user: User) => void,
-    updateUserInDB: (user: User) => void,
-    getUserFromDB: (id: string) => User
-  }
-): string {
-  const state = { ...initialState }; // shallow copy of the initial state
-  // Exemple internal function
-  function createUser(id: string, name: string) { 
-    const user = { id, name };
-    ports.createUserInDB(user);
-    state.users.push(user); 
-  }
-  createUser("123", "Bob");
-  ...
-  ports.print("Hello, world!");
-  ports.updateUserInDB({ id: "11", name: "Alice" });
-  const user = ports.getUserFromDB("123");
-  ...
-  return "completed!" // only return a value if specified by the user in the Verbo files
+export type Ports = {
+  print: (message: string) => void,
+  createUserInDB: (user: User) => void,
+  updateUserInDB: (user: User) => void,
+  getUserFromDB: (id: string) => User
 }
 
+export class Main {
+  private state: State;
+  private ports: Ports;
+
+  constructor(state: State, ports: Ports) {
+    this.state = state;
+    this.ports = ports;
+  }
+
+  private createUser(id: string, name: string): void {
+    const user: User = { id, name };
+    this.ports.createUserInDB(user);
+    this.state.users.push(user);
+  }
+
+  // if defined in the Verbo files, you should add public methods 
+  public updateUser(id: string, name: string): void {
+    const user: User = this.ports.getUserFromDB(id);
+    user.name = name;
+    this.ports.updateUserInDB(user);
+  }
+
+}
+  
 Key Guidelines:
 - State Mutability: The local state is mutable, but all other side effects should be managed through the provided ports.
-- Encapsulation: Place all functions, constants, and variables within the main function to ensure encapsulation.
+- Encapsulation: Place all functions, constants, and variables within the main class to ensure encapsulation.
 - Handling Ambiguity: If any Verbo descriptions are ambiguous or incomplete, make reasonable assumptions and document them in comments.
 - Processing Order: Evaluate all provided files as one logical unit, ensuring that the main function can run without errors.
 - Final Output: The generated TypeScript code should be a single, well-formatted file, suitable for immediate integration and further linting.
@@ -131,6 +138,8 @@ Starting from the file "main.md", generate the required code that fully implemen
       return gemini(getEnv(dotEnvFilePath, "GEMINI_KEY"), model);
     } else if (aiProvider === "openai") {
       return openai(getEnv(dotEnvFilePath, "OPENAI_KEY"), model);
+    } else if (aiProvider === "anthropic") {
+      return anthropic(getEnv(dotEnvFilePath, "ANTHROPIC_KEY"), model);
     }
 
     return ollama(model);
@@ -138,17 +147,71 @@ Starting from the file "main.md", generate the required code that fully implemen
 
   let text = await getProvider()(submitPrompt);
 
-  // the code will be wrapped in backticks, so we need to get the middle part
-  //
-  //
-
   fs.writeFileSync(`${outputPath}/${aiProvider}-response.md`, text);
-  text = text.replace("```typescript", "");
+  text = text.replace("```typescript", "```");
   text = text.split("```")[1];
 
-  console.log(`Writing ${aiProvider}-ts-main.ts to the output folder.`);
+  console.log(`Writing mainn.ts to the output folder`);
 
-  fs.writeFileSync(`${outputPath}/${aiProvider}-ts-main.ts`, text);
+  fs.writeFileSync(`${outputPath}/index.ts`, text);
+
+  // compile the generated code
+
+  const { exec } = require("child_process");
+
+  exec(`npx tsc ${outputPath}/index.ts --outDir ${outputPath}`, async (error: any, stdout: any, stderr: any) => {
+
+    if (!error) return
+
+    console.log(`The generated code has errors. Asking the AI for fixes...`);
+
+    const retryPrompt = `
+      Your task is to fix issues with a TypeScript file.
+			Input Details:
+			- The TypeScript code for an application that has issues.
+			- An error message from the TypeScript compiler.
+
+			Each input section will be identified by a delimiter, which is a double equal sign (==).
+
+			Output:
+			- A new version of the program that resolves the issues.
+			- The output should be in Markdown format, with code enclosed in triple backticks (\`\`\`) for easy integration.
+
+			The inputs are as follows:
+
+			== Application code ==
+
+			${text}
+
+			== Error Message ==
+
+			${error}
+        
+        `;
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    fs.writeFileSync(`${outputPath}/${aiProvider}-retry.md`, retryPrompt);
+
+    let retryText = await getProvider()(retryPrompt);
+
+    retryText = retryText.replace("```typescript", "```");
+    retryText = retryText.split("```")[1];
+
+
+    fs.writeFileSync(`${outputPath}/index.ts`, retryText);
+    exec(`npx tsc ${outputPath}/index.ts --outDir ${outputPath}`, async (error: any, stdout: any, stderr: any) => {
+
+      if (error) {
+        console.error(error)
+        throw new Error("The code still has errors. Please adjust the specs.");
+      } else {
+        console.log("Your code is ready in the target output folder.");
+      }
+    });
+
+
+  })
 
   console.log("Your code is ready in the target output folder.");
 
