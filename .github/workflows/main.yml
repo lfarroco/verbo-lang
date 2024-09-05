@@ -1,0 +1,9 @@
+- uses: zdeneklapes/dotenv-vault-action@v1
+        with:
+          dotenvMe: ${{ secrets.DOTENV_ME }}
+          stage: "ci"
+          move: "false"
+- run: |
+    npm install
+    make test-gemini
+    
