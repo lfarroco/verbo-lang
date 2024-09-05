@@ -37,7 +37,7 @@ The application exposes the following operations to allow manipulating the state
 - remove todo: receives a todo name and removes it from the list
 - update due date: receives a todo name and a new due date and updates the todo
 - mark as completed: receives a todo name and marks it as completed.
-- mask as incomplete: receives a todo name and marks it as incomplete
+- mark as incomplete: receives a todo name and marks it as incomplete
 
 When "mark as completed" is called, the application should call the "ring bell" port with the todo item name as a parameter.
 ```
@@ -174,8 +174,8 @@ test("should update the due date of a todo", () => {
 
 ## How it works
 
-The compiler works by collecting all .md files within the `source` directory and providing it to an LLM, alongside a template code structure
-that follows these key rules, among others:
+The compiler works by collecting all .md files within the `source` directory and providing them to an LLM, alongside a template code structure
+that follows these key rules:
 
 - the program must be self-contained
 - the program receives as parameters:
