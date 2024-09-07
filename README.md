@@ -1,5 +1,5 @@
 # verbo-lang
-An experiment on creating a programming the language defined in natural language.
+An experiment on programming in natural language.
 
 ## Table of Contents
 
@@ -43,9 +43,9 @@ When "mark as completed" is called, the application should call the "ring bell"
 port with the todo item name as a parameter.
 ```
 
-The definitions don't need to be in English (check the exemple under `test/todo-pt-br/`).
+The language is not restricted to English (see the example under test/todo-pt-br/).
 
-When we compile the above specifications, the generated looks like this (generated with the local model 7B codegemma):
+When compiled, the specifications generate code like this (using the local 7B codegemma model):
 
 ```typescript
 
@@ -109,9 +109,7 @@ export class Main {
 
 ```
 
-We also are experimenting with automated testing generation.
-This could be useful if you have a different AI model genering tests based on the description and available types only.
-Currently, we are able to generate tests like this:
+We are also experimenting with automated test generation. This could be useful when using different AI models to generate tests based on descriptions and available types. Currently, we can generate tests like this:
 
 ```typescript
 
@@ -175,41 +173,29 @@ test("should update the due date of a todo", () => {
 
 ## How it works
 
-The compiler works by collecting all .md files within the `source` directory and providing them to an LLM, alongside a template code structure
-that follows these key rules:
+The compiler collects all .md files within the source directory and provides them to a Large Language Model (LLM), alongside a template code structure. The structure follows these key rules:
 
-- the program must be self-contained
-- the program receives as parameters:
-  - its initial state
-  - a set of "ports" that allow it to interact with the outside world
-- the program exposes a set of operations that allow manipulating the state and/or interacting with the ports
+- The program must be self-contained.
+- It receives as parameters:
+  - Its initial state
+  - A set of "ports" that allow it to interact with the outside world
+- It exposes a set of operations to manipulate the state or interact with the ports.
 
-The resulting program is compiled into TypeScript. Currently, this is the only target language supported, but we plan to add more in the future.
-The advantage of using TypeScript is that it has types, is multiparadigm, and is a good middle ground between OOP/functional languages.
-That should be a helpful factor when the program into another language in the future - making the language an "AST" of sorts.
-TypeScript also has extensive tooling of parsers/linters/testing that we can include in our pipeline.
+The result is compiled into TypeScript. Currently, TypeScript is the only supported target language, though we plan to support more in the future. TypeScript is a good middle ground between OOP and functional languages, with strong typing and extensive tooling for parsing, linting, and testing.
 
-After the code is generated we attempt to compile it using the `tsc` compiler.
-If it fails, we ask the AI to fix it by making a prompt that includes the error message and the generated code.
-If it fails again, the operation is aborted - that requires the user to update the specifications, as something is not clear enough for the AI to understand and generate valid code.
+After the code is generated, we compile it using the tsc compiler. If it fails, we provide the error message to the AI, prompting it to fix the issue. If it fails again, the operation is aborted, and the user must update the specifications to clarify any ambiguities.
 
-Currently, all Verbo code will result into a TypeScript class. We know that it is possible to achieve the same effect without classes, but we believe that this is a good starting point - and the AI that generates the code is more familiar with classes than with other constructs.
+At present, all Verbo-generated code results in a TypeScript class. While the same functionality could be achieved without classes, we chose this approach because the AI is more familiar with classes.
 
-Having the AI perform tasks over a specification also allows for the generation of tests, collection of suggestions, generation of documentation, and other tasks that can be automated.
+The AI-driven approach enables additional automation, such as generating tests, collecting suggestions, creating documentation, and other tasks.
 
 ## Reasoning
 
-In the past few years, there has been a lot of progress in the field of Natural Language
-Processing with the rise of transformers and the popularization of GPT models.
-When used for coding, a common practice that emerged is using comments to drive the code
-generation process, like writing "the function below returns the square of a number" and
-then letting the model generate said function.
+Over the past few years, significant progress in Natural Language Processing (NLP) has been achieved through advancements in transformer models and the rise of GPT-based models. In coding, a common practice is using comments to drive code generation, such as writing "the function below returns the square of a number," and letting the model generate the function.
 
-With Verbo, we take this idea further by turning the comments into a specification.
-Besides using natural language, you still need to be aware on how computers work, as you
-will still be handling variables, functions, and other programming concepts.
+Verbo takes this idea further by turning comments into a specification. While natural language is used, you still need a basic understanding of how computers work, as you'll be dealing with variables, functions, and other programming concepts.
 
-We didn't achieve the "make a website, no bugs, please" phase yet, but maybe we will get there someday.
+We haven't reached the "make a website with no bugs" phase yet, but we're getting closer!
 
 ## Getting Started
 
@@ -223,47 +209,39 @@ A basic project looks like this:
 .env
 ```
 
-You can run this tool with your local AI using Ollama. 
+You can run Verbo with your local AI using Ollama. We also support Gemini, Anthropic, and OpenAI, provided you have an API key. For those providers, create a `.env` file with `GEMINI_KEY=...`, `OPENAI_KEY=...`, or `ANTHROPIC_KEY=...`, depending on the provider you wish to use.
 
-We also have support for Gemini, Anthropic and OpenAi, provided that you have an API key.
-For those providers, create a `.env` with `GEMINI_KEY=...`, `OPENAI_KEY=...` or `ANTHROPIC_KEY=...` depending on the provider you want to use.
+As this project is experimental, we haven't published an npm package yet. To try it out, clone the repository and:
 
-As this is still experimental, we don't have a npm package yet. To try, clone this repo, then:
-- install dependencies with `npm install`
-- check the makefile to see how to run the tool
+1. Install dependencies with `npm install`.
+2. Check the Makefile to see how to run the tool (eg. `make test-gemini`)
 
-By default, the cli reads all `.md` files in the `source` directory. Having a `main.md` file is required.
-The generated files will be placed in the `dist` directory.
+By default, the CLI reads all .md files in the source directory. A main.md file is required. The generated files will be placed in the dist directory.
 
-To choose which AI provider to use, use the `-ai` option. The default is `ollama`, but you can also choose from `gemini`, `openai` or `anthropic`.
+To choose which AI provider to use, pass the -ai option. The default is ollama, but you can also choose gemini, openai, or anthropic.
 
 ## Syntax
 
-The language uses markdown files to allow compatibility with tools that allow rich text editing
-and displaying, but no special markup is required to create a working program.
+Verbo uses markdown files to allow compatibility with rich text editing and display tools, but no special markup is required to create a working program.
 
 ### Architecture
 
-Verbo programs assume a standard architecture for all software created with it.
-All Verbo programs are long-running processes that manage a state (optional) and expose operations to manipulate it.
-To interact with the outside world, the program uses "ports" - functions that are passed as parameters to the program.
-Once created, the program operations (think of them as methods) can be called to manipulate the state and/or to interact with the ports.
-When declaring the program in the `main.md` file, you must define how the state will look like and which ports will be available.
+Verbo programs assume a standard architecture: they are long-running processes that manage a state (optional) and expose operations to manipulate it. To interact with the outside world, the program uses "ports"—functions passed as parameters. You must define how the state looks and which ports are available in the main.md file.
 
 ### Comments
 
-That's the nice thing about Verbo - everything is a comment. All the text is at the
-same time documentation and code.
+In Verbo, everything is a comment. The text is both documentation and code.
 
 ### Constants/Variables
 
-You can declare that a variable exists:
+You can declare constants and variables like this:
+
 ```
 Use a constant called FILE_PATH to store the path to the configuration file.
 Use a variable called "address" to store the user's address.
 ```
-Verbo variable are available are available anywhere in the program. 
-You can also use direct assignment if you want to:
+
+Variables are available throughout the program. Direct assignment is also possible:
 
 ```
 name: "John"
@@ -288,7 +266,7 @@ This is the list of supported fruits:
 - Pear
 ```
 
-If you want to use a more traditional approach, it will work as well:
+Alternatively:
 
 ```
 This is a constant called "fruits", which is composed of ["apple", "banana", "pear"].
@@ -358,16 +336,18 @@ languages that don't have this concept.
 Conditions work best if they are short expressions:
 
 ```
-If the variable "age" is higher than 18, return "adult". Otherwise, return "minor".
+If the variable "age" is higher than 18, return "adult".
+Otherwise, return "minor".
 
-If "musician code" is "MOZ", call the "play mozart" function. Otherwise, call the "play beethoven" function.
+If "musician code" is "MOZ", call the "play mozart" function.
+Otherwise, call the "play beethoven" function.
 
-Check the user's "is student" property: 
+Check if the is a student: 
 - if true, the discount is 50%
 - otherwise, the discount is 0%
 ```
 
-So try to keep them simple - this applies to non-verbo code as well ;
+So try to keep them simple - this applies to non-verbo code as well ;)
 
 ## Roadmap
 

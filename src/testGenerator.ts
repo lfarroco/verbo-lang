@@ -1,10 +1,10 @@
 import * as fs from "fs";
 
-import { getEnv, getFiles } from "../utils";
-import { openai } from "../api/openai";
-import { gemini } from "../api/gemini";
-import { ollama } from "../api/ollama";
-import { anthropic } from "../api/anthropic";
+import { getEnv, getFiles } from "./utils";
+import { openai } from "./api/openai";
+import { gemini } from "./api/gemini";
+import { ollama } from "./api/ollama";
+import { anthropic } from "./api/anthropic";
 
 export default async function testGenerator({
 	outputPath,
@@ -118,7 +118,6 @@ Now, write the tests for the program.
 
 	console.log("Submitting code to the AI...");
 
-
 	const getProvider = () => {
 		if (aiProvider === "gemini") {
 			return gemini(getEnv(dotEnvFilePath, "GEMINI_KEY"), model);
@@ -149,8 +148,6 @@ Now, write the tests for the program.
 	const { exec } = require("child_process");
 
 	exec(`npx jest ${outputPath}`, async (error: any, stdout: any, stderr: any) => {
-
-		await new Promise((resolve) => setTimeout(resolve, 1000));
 
 		if (error) {
 

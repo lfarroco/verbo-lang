@@ -1,6 +1,8 @@
 import { Command } from "commander";
-import compile from "./compiler/compiler";
-import testGenerator from "./compiler/testGenerator";
+import compile from "./compiler/compile-class";
+import compileReact from "./compiler/compile-react";
+import compileFunction from "./compiler/compile-function";
+import testGenerator from "./testGenerator";
 
 const program = new Command();
 
@@ -17,6 +19,7 @@ program
   .option("-m, --model <value>", "AI model. Defaults: gpt-3.5-turbo for OpenAI, codegemma for Ollama, gemini-1.5-flash-latest for Gemini")
   .option("-g, --generate-tests", "Generate tests")
   .option("-v, --verbose", "Verbose output")
+  .option("-t, --target <value>", "Target output (class, function, react). Default: function")
   .parse(process.argv);
 
 const pwd = process.cwd();
@@ -25,12 +28,15 @@ const options = program.opts();
 
 const verbose = options.verbose || false;
 
+if (verbose)
+  console.log("options: ", options);
+
 if (!options.output && verbose) {
   console.log("Using default output directory: /dist");
 }
 
 if (!options.target && verbose) {
-  console.log("Using default target language: js");
+  console.log("Using default target: function");
 }
 
 if (!options.Envfile && verbose) {
@@ -45,6 +51,7 @@ if (!options.aiprovider && verbose) {
   console.log("Using default AI provider: gemini");
 }
 
+
 const envfile = options.envfile || ".env";
 const source = options.source || "source/";
 const outputPath = `${pwd}/${options.output || "dist/"}`;
@@ -52,7 +59,7 @@ const sourceDir = `${pwd}/${source}`;
 const dotEnvFilePath = `${pwd}/${envfile}`;
 const generateTests = options.generateTests || false;
 const aiProvider = options.aiprovider || "ollama";
-const shouldCompile = options.compile || true;
+const target = options.target || "function";
 
 const defaultModels: { [key: string]: string } = {
   gemini: "gemini-1.5-flash-latest",
@@ -71,17 +78,29 @@ if (!model) {
   console.error("Invalid model for AI provider");
 }
 
-if (verbose)
-  console.log("using: ", {
-    outputPath,
-    sourceDir,
-    dotEnvFilePath,
-  });
 
 console.log(`Compiling to TypeScript...`);
 
 async function main() {
-  if (shouldCompile)
+
+  if (target === "react") {
+    await compileReact({
+      outputPath,
+      sourceDir,
+      dotEnvFilePath,
+      aiProvider,
+      model,
+    });
+  } else if (target === "function") {
+    await compileFunction({
+      outputPath,
+      sourceDir,
+      dotEnvFilePath,
+      aiProvider,
+      model,
+    });
+  } else if (target === "class") {
+
     await compile({
       outputPath,
       sourceDir,
@@ -89,22 +108,17 @@ async function main() {
       aiProvider,
       model,
     });
-  else if (verbose) {
-    console.log("Skipping compilation");
   }
 
-  if (!generateTests) {
-    if (verbose)
-      console.log("Skipping test generation");
-    return;
+  if (generateTests) {
+    await testGenerator({
+      outputPath,
+      sourceDir,
+      dotEnvFilePath,
+      aiProvider,
+      model,
+    });
   }
-  await testGenerator({
-    outputPath,
-    sourceDir,
-    dotEnvFilePath,
-    aiProvider,
-    model,
-  });
 }
 
 main();
