@@ -1,4 +1,4 @@
-This defines the logic for the Epic RPG web API.
+This defines the logic for the RPG Guild Simulator web API.
 
 The endpoints are:
 

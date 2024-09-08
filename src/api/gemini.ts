@@ -29,7 +29,7 @@ export const gemini = (key: string, model: string) => async (prompt: string): Pr
 		throw new Error(`Invalid response from the AI: ${JSON.stringify(json, null, 2)}`)
 	}
 
-	let { text } = json.candidates[0].content.parts[0];
+	const { text } = json.candidates[0].content.parts[0];
 
 	return text;
 

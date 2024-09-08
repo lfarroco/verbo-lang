@@ -1,27 +1,17 @@
-import * as fs from "fs";
-
-import { getEnv, getFiles } from "../utils";
-import { openai } from "../api/openai";
-import { gemini } from "../api/gemini";
-import { ollama } from "../api/ollama";
-import { anthropic } from "../api/anthropic";
+import { createDirIfNotExists, listAppFiles, readFile, writefile } from "../utils.ts";
 
 export default async function compile({
   outputPath,
   sourceDir,
-  dotEnvFilePath,
   aiProvider,
-  model,
 }: {
   outputPath: string;
   sourceDir: string;
-  dotEnvFilePath: string;
-  aiProvider: string;
-  model: string;
+  aiProvider: (prompt: string) => Promise<string>;
 }) {
   console.log("Compiling source files...");
 
-  const files = getFiles(sourceDir);
+  const files = listAppFiles(sourceDir);
 
   let compiledFiles = "";
 
@@ -29,7 +19,7 @@ export default async function compile({
     // remove absolute file path from the file name
     const filteredFileName = file.replace(sourceDir + "/", "");
     compiledFiles += `== ${filteredFileName} ==\n\n`;
-    const content = fs.readFileSync(file, "utf8");
+    const content = readFile(file);
 
     compiledFiles += content + "\n\n";
   });
@@ -117,36 +107,23 @@ Starting from the file "main.md", generate the required code that fully implemen
 
   console.log(`Preparing output folder at ${outputPath}`);
 
-  if (!fs.existsSync(outputPath)) {
-    fs.mkdirSync(outputPath);
-  }
+  createDirIfNotExists(outputPath);
 
   console.log(
     "Writing prompt.md to output folder. It contains the prompt sent to the AI provider."
   ); // TODO: include ai provider in the name
-  fs.writeFileSync(`${outputPath}/prompt.md`, submitPrompt);
+
+  writefile(`${outputPath}/prompt.md`, submitPrompt);
 
   console.log("Submitting code to the AI...");
 
   // TODO: should be part of the ai provider
 
-  const getProvider = () => {
-    if (aiProvider === "gemini") {
-      return gemini(getEnv(dotEnvFilePath, "GEMINI_KEY"), model);
-    } else if (aiProvider === "openai") {
-      return openai(getEnv(dotEnvFilePath, "OPENAI_KEY"), model);
-    } else if (aiProvider === "anthropic") {
-      return anthropic(getEnv(dotEnvFilePath, "ANTHROPIC_KEY"), model);
-    }
-
-    return ollama(model);
-  };
-
-  let text = await getProvider()(submitPrompt);
+  let text = await aiProvider(submitPrompt);
 
   console.log(`AI response: ${text} `);
 
-  fs.writeFileSync(`${outputPath}/${aiProvider}-response.md`, text);
+  writefile(`${outputPath}/${aiProvider}-response.md`, text);
   text = text.replace("```typescript", "```");
   text = text.split("```")[1];
 
@@ -154,79 +131,83 @@ Starting from the file "main.md", generate the required code that fully implemen
 
   console.log(`Writing main.ts to the output folder`);
 
-  fs.writeFileSync(`${outputPath}/index.tsx`, text);
+  writefile(`${outputPath}/index.tsx`, text);
 
   // compile the generated code
 
   console.log("Will attempt to compile the generated code.");
 
-  const { exec } = require("child_process");
+  //const { exec } = require("child_process");
 
-  exec(`npx tsc --jsx react --esModuleInterop ${outputPath}/index.tsx --outDir ${outputPath}`, async (error: any, stdout: any, stderr: any) => {
+  // TODO: with deno, tsc is no longer needed
 
-    if (!error) {
-      console.log("Code has been successfully compiled.");
-      return
-    }
+  // exec(`npx tsc --jsx react --esModuleInterop ${outputPath}/index.tsx --outDir ${outputPath}`, async (error: any, stdout: any, stderr: any) => {
 
-    console.log(`The generated code has errors. Asking the AI for fixes...`);
+  //   if (!error) {
+  //     console.log("Code has been successfully compiled.");
+  //     return
+  //   }
 
-    const retryPrompt = `
-      Your task is to fix issues with a TypeScript file.
-			Input Details:
-			- The TypeScript code for an application that has issues.
-			- An error message from the TypeScript compiler.
+  //   console.log(`The generated code has errors. Asking the AI for fixes...`);
 
-			Each input section will be identified by a delimiter, which is a double equal sign (==).
+  //   const retryPrompt = `
+  //     Your task is to fix issues with a TypeScript file.
+  // 		Input Details:
+  // 		- The TypeScript code for an application that has issues.
+  // 		- An error message from the TypeScript compiler.
 
-			Output:
-			- A new version of the program that resolves the issues.
-			- The output should be in Markdown format, with code enclosed in triple backticks (\`\`\`) for easy integration.
+  // 		Each input section will be identified by a delimiter, which is a double equal sign (==).
 
-			The inputs are as follows:
+  // 		Output:
+  // 		- A new version of the program that resolves the issues.
+  // 		- The output should be in Markdown format, with code enclosed in triple backticks (\`\`\`) for easy integration.
 
-			== Application code ==
+  // 		The inputs are as follows:
 
-			${text}
+  // 		== Application code ==
 
-			== Error Message ==
+  // 		${text}
 
-			error: ${error}
-      stdout: ${stdout}
-      stderr: ${stderr}
-        
-        `;
+  // 		== Error Message ==
 
-    fs.writeFileSync(`${outputPath}/${aiProvider}-retry.md`, retryPrompt);
+  // 		error: ${error}
+  //     stdout: ${stdout}
+  //     stderr: ${stderr}
 
-    let fixResponse = await getProvider()(retryPrompt);
+  //       `;
 
-    console.log(`AI response: ${fixResponse} `);
+  //   fs.writeFileSync(`${outputPath}/${aiProvider}-retry.md`, retryPrompt);
 
-    fixResponse = fixResponse.replace("```typescript", "```");
-    fixResponse = fixResponse.split("```")[1];
+  //   let fixResponse = await getProvider()(retryPrompt);
 
-    console.log("Extracted code from the AI response.");
+  //   console.log(`AI response: ${fixResponse} `);
 
-    console.log(`Writing fixed main.ts to the output folder`);
+  //   fixResponse = fixResponse.replace("```typescript", "```");
+  //   fixResponse = fixResponse.split("```")[1];
 
-    fs.writeFileSync(`${outputPath}/index.tsx`, fixResponse);
+  //   console.log("Extracted code from the AI response.");
 
-    console.log("Will attempt to compile the fixed code.");
+  //   console.log(`Writing fixed main.ts to the output folder`);
 
-    exec(`npx tsc --jsx react --esModuleInterop ${outputPath}/index.tsx --outDir ${outputPath}`, async (error: any, stdout: any, stderr: any) => {
+  //   fs.writeFileSync(`${outputPath}/index.tsx`, fixResponse);
 
-      if (error) {
-        console.error(error)
-        throw new Error("The code still has errors. Please adjust the specs.");
-      } else {
-        console.log("Your code is ready in the target output folder.");
-      }
-    });
+  //   console.log("Will attempt to compile the fixed code.");
 
-  })
+  //   exec(`npx tsc --jsx react --esModuleInterop ${outputPath}/index.tsx --outDir ${outputPath}`, async (error: any, stdout: any, stderr: any) => {
+
+  //     if (error) {
+  //       console.error(error)
+  //       throw new Error("The code still has errors. Please adjust the specs.");
+  //     } else {
+  //       console.log("Your code is ready in the target output folder.");
+  //     }
+  //   });
+
+  // })
 
   console.log("Your code is ready in the target output folder.");
 
   // TODO: feed into formatter and linter, on error, feed it another prompt
 }
+
+

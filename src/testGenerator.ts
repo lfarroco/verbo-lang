@@ -1,27 +1,17 @@
-import * as fs from "fs";
-
-import { getEnv, getFiles } from "./utils";
-import { openai } from "./api/openai";
-import { gemini } from "./api/gemini";
-import { ollama } from "./api/ollama";
-import { anthropic } from "./api/anthropic";
+import { createDirIfNotExists, listAppFiles, readFile, writefile } from "./utils.ts";
 
 export default async function testGenerator({
 	outputPath,
 	sourceDir,
-	dotEnvFilePath,
 	aiProvider,
-	model,
 }: {
 	outputPath: string;
 	sourceDir: string;
-	dotEnvFilePath: string;
-	aiProvider: string;
-	model: string;
+	aiProvider: (prompt: string) => Promise<string>;
 }) {
 	console.log("Compiling source files...");
 
-	const files = getFiles(sourceDir);
+	const files = listAppFiles(sourceDir);
 
 	let compiledFiles = "";
 
@@ -29,12 +19,12 @@ export default async function testGenerator({
 		// remove absolute file path from the file name
 		const filteredFileName = file.replace(sourceDir + "/", "");
 		compiledFiles += `== ${filteredFileName} ==\n\n`;
-		const content = fs.readFileSync(file, "utf8");
+		const content = readFile(file);
 
 		compiledFiles += content + "\n\n";
 	});
 
-	const code = fs.readFileSync(`${outputPath}/index.ts`);
+	const code = readFile(`${outputPath}/index.ts`);
 
 	const prompt = `
 Your task is to generate tests for a TypeScript program.
@@ -107,107 +97,30 @@ Now, write the tests for the program.
 
 	console.log("The test prompt:", prompt);
 
-	if (!fs.existsSync(outputPath)) {
-		fs.mkdirSync(outputPath);
-	}
+	createDirIfNotExists(outputPath);
 
 	console.log(
 		"Writing prompt.md to output folder. It contains the prompt sent to the AI provider."
 	); // TODO: include ai provider in the name
-	fs.writeFileSync(`${outputPath}/test-prompt.md`, prompt);
+
+	writefile(`${outputPath}/test-prompt.md`, prompt);
 
 	console.log("Submitting code to the AI...");
 
-	const getProvider = () => {
-		if (aiProvider === "gemini") {
-			return gemini(getEnv(dotEnvFilePath, "GEMINI_KEY"), model);
-		} else if (aiProvider === "openai") {
-			return openai(getEnv(dotEnvFilePath, "OPENAI_KEY"), model);
-		} else if (aiProvider === "anthropic") {
-			return anthropic(getEnv(dotEnvFilePath, "ANTHROPIC_KEY"), model);
-		}
-
-		return ollama(model);
-	};
-
-	let text = await getProvider()(prompt);
+	let text = await aiProvider(prompt);
 
 
-	fs.writeFileSync(`${outputPath}/${aiProvider}-response.md`, text);
+	writefile(`${outputPath}/${aiProvider}-response.md`, text);
 	text = text.replace("```typescript", "```");
 	text = text.split("```")[1];
 
 	console.log(`Writing index.test.ts to the output folder.`);
 
-	fs.writeFileSync(`${outputPath}/index.test.ts`, text);
+	writefile(`${outputPath}/index.test.ts`, text);
 
 	// run jest test
 
 	console.log("Running tests...");
 
-	const { exec } = require("child_process");
-
-	exec(`npx jest ${outputPath}`, async (error: any, stdout: any, stderr: any) => {
-
-		if (error) {
-
-			console.log(`The generated tests have errors. Asking the AI for fixes...`);
-
-			const fixPrompt = `
-			Your task is to fix issues with a TypeScript test suite.
-			Input Details:
-			- A test suite that is failing.
-			- An error message from the test suite.
-
-			Each input section will be identified by a delimiter, which is a double equal sign (==).
-
-			Output:
-			- A new version of the test suite that passes all tests.
-			- The output should be in Markdown format, with code enclosed in triple backticks (\`\`\`) for easy integration.
-			- You should reply with all the tests, not just the failing ones, as your response will replace the entire test suite.
-			- Your response should contain only code - no explanations or comments.
-
-			The inputs are as follows:
-
-			== Test Suite ==
-
-			${text}
-
-			== Error Message ==
-
-			${error}
-			`
-
-			fs.writeFileSync(`${outputPath}/${aiProvider}-test-fix-prompt.md`, fixPrompt);
-
-			let response = await getProvider()(fixPrompt);
-
-			fs.writeFileSync(`${outputPath}/${aiProvider}-test-fix-response.md`, response);
-			response = response.replace("```typescript", "```");
-			response = response.split("```")[1];
-
-			console.log(`Writing fixed index.test.ts to the output folder.`);
-
-			fs.writeFileSync(`${outputPath}/index.test.ts`, response);
-
-			exec(`npx jest ${outputPath}`, async (error: any, stdout: any, stderr: any) => {
-
-				if (error) {
-					console.error(error)
-					throw new Error("The test suite still has errors. Please check the specs.");
-				} else {
-					console.log("After fixes, all tests passed!");
-				}
-
-			})
-
-
-		} else {
-
-			console.log("All tests passed!", stdout);
-
-		}
-
-	})
 
 }
