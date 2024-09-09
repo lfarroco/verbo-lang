@@ -1,0 +1,6 @@
+PSQL_DB=postgres
+PSQL_USER=postgres
+PSQL_PASSWORD=mysecretpassword
+PSQL_HOST=db
+PSQL_PORT=5432
+API_PORT=8000

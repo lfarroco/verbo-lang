@@ -38,5 +38,23 @@ run-db:
 	-e POSTGRES_PASSWORD=mysecretpassword \
 	-e PGDATA=/var/lib/postgresql/data/pgdata \
 	-p 55400:5432 \
-	-v "$(shell pwd)"/dist/init.sql:/docker-entrypoint-initdb.d/data.sql \
+	-v "$(shell pwd)"/test/guild/results/schema.sql:/docker-entrypoint-initdb.d/data.sql \
 	postgres
+
+scaffold:
+	mkdir app
+	mkdir app/src
+	mkdir app/src/models
+	mkdir app/src/db
+	mkdir app/db
+
+	cp templates/main.template app/src/main.ts
+	cp templates/dotenv.template app/.env
+	cp templates/docker-compose.template app/docker-compose.yml
+
+	cp test/guild/results/init.sql app/db/init.sql
+	cp test/guild/results/db-client.ts app/src/db-client.ts
+	cp test/guild/results/routes.ts app/src/routes.ts
+	cp test/guild/results/models.ts app/src/models.ts
+
+

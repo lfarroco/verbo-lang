@@ -1,4 +1,4 @@
-The endpoints are:
+The endpoints for this application listed below:
 
 - `/heroes`
 - `/heroes/{id}`
@@ -9,7 +9,7 @@ The endpoints are:
 - `/locations`
 - `/locations/{id}`
 
-The following endpoints allow interacting with the relationships:
+The following endpoints are used for interactions:
 
 - `/heroes/{id}/items` - Get all items for a hero.
 - `/heroes/{id}/items/{itemId}` - Add an item to a hero.

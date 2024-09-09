@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:15-alpine
+    env_file: ".env"
+    environment:
+      POSTGRES_HOST: ${PSQL_HOST}
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${PSQL_USER}
+      POSTGRES_PASSWORD: ${PSQL_PASSWORD}
+      POSTGRES_DB: ${PSQL_DB}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - '${PSQL_PORT}:5432'
+
+  deno:
+    image: denoland/deno:alpine
+    env_file: ".env"
+    working_dir: /app
+    volumes:
+      - ./src:/app
+    command: run --allow-net --allow-env --allow-read main.ts
+    depends_on:
+      - db
+    ports:
+      - '${API_PORT}:${API_PORT}'
+
+volumes:
+  db_data:

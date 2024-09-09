@@ -120,7 +120,7 @@ Generate SQL code that fully implements the described software models, ensuring 
 
 	console.log(`Saving schema...`);
 
-	writefile(`${verboDir}/schema.sql`, text);
+	writefile(`${verboDir}/init.sql`, text);
 
 	console.log("The code has been successfully generated");
 }
