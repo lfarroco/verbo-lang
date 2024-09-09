@@ -69,12 +69,6 @@ CREATE TABLE posts (
   content TEXT NOT NULL
 );
 
-CREATE TABLE comments (
-  id SERIAL PRIMARY KEY,
-  content TEXT NOT NULL,
-  post_id INTEGER REFERENCES posts(id)
-);
-
 CREATE TABLE users_posts (
   user_id INTEGER REFERENCES users(id),
   post_id INTEGER REFERENCES posts(id)
@@ -87,9 +81,7 @@ export type User = { id: number; name: string; email: string; }
 
 export type Post = { id: number; title: string; content: string; }
 
-export type Comment = { id: number; content: string; post_id: number; }
-
-export type UserPost = { user_id: number; post_id: number; }
+export type UserPost = { userId: number; postId: number; }
 \`\`\`
 
 Final Notes:

@@ -33,20 +33,40 @@ Your Output:
 - Relationship Handling: For one-to-many relationships, define appropriate foreign keys. For many-to-many relationships, create necessary join tables.
 - Constraints: Implement any constraints (e.g., NOT NULL, UNIQUE) as described by the models.
 - Normalization: Ensure the database schema follows standard normalization practices where applicable.
+- ids, created_at, updated_at: Include an id field as the primary key for each table, along with created_at and updated_at timestamp fields.
   
 Key Guidelines:
 - Handling Ambiguity: If any model descriptions are incomplete, make reasonable assumptions and document them as comments in the SQL file. Use comments to explain assumptions or decisions made to handle ambiguities (enclosed in -- SQL comments).
 - Processing Order: Treat all provided files as a single cohesive project. Ensure the SQL file is structured to avoid errors when run, even if models reference each other across files.
 - Modularity: The generated SQL should be modular, so that individual parts of the schema can be easily extended or modified in future iterations.
 - Validation-Ready: The final output should be a well-formatted, valid SQL file that can be used directly or linted for integration into a project.
+- One-to-Many Relationships: If a model has a list/array of another model, ensure the appropriate foreign key relationship is established.
+- Many-to-Many Relationships: If two models reference each other in a many-to-many relationship, create a join table to represent this relationship. Example: A student can enroll in multiple courses, and a course can have multiple students.
+
+Example Input:
+
+== models/user.md ==
+
+A user has a name and an email. A user can have many posts.
+
+== models/post.md ==
+
+A post has a title and content. A post belongs to a user.
+
+== models/comment.md ==
+
+A comment has content. A comment belongs to a post.
 
 Example SQL Output:
+
 \`\`\`sql
 -- Table for users
 CREATE TABLE users (
 	id SERIAL PRIMARY KEY,
 	name VARCHAR(255) NOT NULL, 
-	email VARCHAR(255) NOT NULL UNIQUE
+	email VARCHAR(255) NOT NULL UNIQUE,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 );
 
 -- Table for posts, with foreign key referencing users
@@ -54,7 +74,9 @@ CREATE TABLE posts (
 	id SERIAL PRIMARY KEY,
 	title VARCHAR(255) NOT NULL,
 	content TEXT NOT NULL,
-	user_id INTEGER REFERENCES users(id)
+	user_id INTEGER REFERENCES users(id),
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 );
 
 -- One user can have many posts
@@ -63,7 +85,9 @@ CREATE TABLE posts (
 CREATE TABLE comments ( 
 	id SERIAL PRIMARY KEY,
 	content TEXT NOT NULL,
-	post_id INTEGER REFERENCES posts(id)
+	post_id INTEGER REFERENCES posts(id),
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 ); 
 \`\`\`
 
@@ -77,12 +101,11 @@ Generate SQL code that fully implements the described software models, ensuring 
 
 	console.log(
 		"Writing prompt.md to output folder. It contains the prompt sent to the AI provider."
-	); // TODO: include ai provider in the name
+	);
+
 	writefile(`${verboDir}/sql-prompt`, submitPrompt);
 
 	console.log("Submitting code to the AI...");
-
-	// TODO: should be part of the ai provider
 
 	let text = await aiProvider(submitPrompt);
 
@@ -95,7 +118,7 @@ Generate SQL code that fully implements the described software models, ensuring 
 
 	console.log("Extracted code from the AI response.");
 
-	console.log(`Writing main.ts to the output folder`);
+	console.log(`Saving schema...`);
 
 	writefile(`${verboDir}/schema.sql`, text);
 
