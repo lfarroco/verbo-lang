@@ -42,11 +42,11 @@ run-db:
 	postgres
 
 scaffold:
-	mkdir app
-	mkdir app/src
-	mkdir app/src/models
-	mkdir app/src/db
-	mkdir app/db
+	mkdir dist
+	mkdir dist/src
+	mkdir dist/src/models
+	mkdir dist/src/db
+	mkdir dist/db
 
 	cp templates/main.template app/src/main.ts
 	cp templates/dotenv.template app/.env
