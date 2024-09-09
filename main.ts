@@ -1,6 +1,7 @@
 import compileSql from "./src/compiler/sql.ts";
 import compileModel from "./src/compiler/models.ts";
 import compileDbClient from "./src/compiler/db-client.ts";
+import compileRoutes from "./src/compiler/routes.ts";
 import { parse } from "https://deno.land/std@0.200.0/flags/mod.ts";
 import type { Args } from "https://deno.land/std@0.200.0/flags/mod.ts";
 import { gemini } from "./src/api/gemini.ts";
@@ -164,6 +165,12 @@ export async function main() {
     });
   } else if (target === "db-client") {
     await compileDbClient({
+      workingDir,
+      verboDir,
+      aiProvider,
+    });
+  } else if (target === "routes") {
+    await compileRoutes({
       workingDir,
       verboDir,
       aiProvider,

@@ -28,6 +28,9 @@ test-models:
 test-db-client: 
 	deno run --allow-all main.ts --dir test/guild  -a gemini --target db-client --envfile .env -v
 
+test-routes:
+	deno run --allow-all main.ts --dir test/guild  -a gemini --target routes --envfile .env -v
+
 run-db:
 	docker run -d \
 	--rm \
