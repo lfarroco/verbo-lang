@@ -107,7 +107,7 @@ const dotEnvFilePath = `${pwd}/${envfile}`;
 const aiProvider = options.aiprovider || "ollama";
 const target = options.target || "function";
 
-const verboDir = workingDir + "/.verbo/";
+const verboDir = workingDir + "/.verbo";
 createDirIfNotExists(verboDir);
 
 const defaultModels: { [key: string]: string } = {
