@@ -21,6 +21,7 @@ This defines the logic for the RPG Guild Simulator web API.
 
 ### models/hero.md
 
+```
 These are the properties for a hero:
 
 - name: The name of the hero.
@@ -34,9 +35,11 @@ These are the properties for a hero:
 Relationships:
 
 - A hero can have multiple items.
+```
 
 ### models/monster.md
 
+```
 These are the properties for a monster:
 
 - name: The name of the monster.
@@ -47,9 +50,11 @@ These are the properties for a monster:
 Relationships:
 
 - A monster can drop from a list of multiple items.
+```
 
 ### models/location.md
 
+```
 These are the attributes for a location in the world:
 
 - name: The name of the location.
@@ -58,13 +63,16 @@ These are the attributes for a location in the world:
 Relationships:
 
 - A location can have multiple monsters.
+```
 
 ### models/item.md
 
+```
 These are the properties for an item:
 
 - name - The name of the item.
 - value - The value of the item (must be positive).
+```
 
 #### routes.md
 
@@ -88,8 +96,7 @@ The following endpoints allow interacting with the relationships:
 - `/locations/{id}/monsters` - Get all monsters for a location.
 ```
 
-The language is not restricted to English (see the example under
-test/todo-pt-br/).
+The destiptions don't need to be in English.
 
 When compiled, the specifications generate SQL and TypeScript Deno code for:
 
