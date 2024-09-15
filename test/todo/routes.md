@@ -7,26 +7,16 @@ These GET endpoints are used to query for todos:
 
 To create a new todo:
 
-- POST `/todos`: Create a new todo. The payload should be a JSON object like
-  this:
-
-```json
-{
-	"name": "string"
-}
-```
+- POST `/todos`: Create a new todo. The payload should be a JSON object with the
+  following properties:
+  - name: string
 
 To update a todo:
 
-- PUT `/todos/{id}`: Update a todo. The payload should be a JSON object like
-  this:
-
-```json
-{
-	"name": "string",
-	"status": "string"
-}
-```
+- PUT `/todos/{id}`: Update a todo. The payload should be a JSON object with the
+  following properties:
+  - name: string
+  - status: string (restricted to the options described in the todo model)
 
 To delete a todo:
 

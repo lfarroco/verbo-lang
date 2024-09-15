@@ -84,9 +84,8 @@ export async function createLocation(
   location: Omit<Location, "id" | "createdAt" | "updatedAt">,
 ): Promise<Location> {
   const result = await client.queryObject<Location>`
-    INSERT INTO locations (name, description) VALUES (${location.name}, ${
-    location.description
-  }) RETURNING *;
+    INSERT INTO locations (name, description) VALUES (${location.name}, ${location.description
+    }) RETURNING *;
   `;
   return result.rows[0];
 }
@@ -96,9 +95,8 @@ export async function updateLocation(
   location: Location,
 ): Promise<Location> {
   const result = await client.queryObject<Location>`
-    UPDATE locations SET name = ${location.name}, description = ${
-    location.description
-  } WHERE id = ${location.id} RETURNING *;
+    UPDATE locations SET name = ${location.name}, description = ${location.description
+    } WHERE id = ${location.id} RETURNING *;
   `;
   return result.rows[0];
 }
@@ -146,11 +144,9 @@ export async function updateHero(
   hero: Hero,
 ): Promise<Hero> {
   const result = await client.queryObject<Hero>`
-    UPDATE heroes SET name = ${hero.name}, level = ${hero.level}, class = ${
-    hero.class
-  }, experience = ${hero.experience}, health = ${hero.health}, attack = ${
-    hero.attack
-  }, location_id = ${hero.locationId} WHERE id = ${hero.id} RETURNING *;
+    UPDATE heroes SET name = ${hero.name}, level = ${hero.level}, class = ${hero.class
+    }, experience = ${hero.experience}, health = ${hero.health}, attack = ${hero.attack
+    }, location_id = ${hero.locationId} WHERE id = ${hero.id} RETURNING *;
   `;
   return result.rows[0];
 }
@@ -198,9 +194,8 @@ export async function updateItem(
   item: Item,
 ): Promise<Item> {
   const result = await client.queryObject<Item>`
-    UPDATE items SET name = ${item.name}, value = ${item.value} WHERE id = ${
-    item.id
-  } RETURNING *;
+    UPDATE items SET name = ${item.name}, value = ${item.value} WHERE id = ${item.id
+    } RETURNING *;
   `;
   return result.rows[0];
 }
@@ -241,9 +236,8 @@ export async function createLocationMonster(
   >,
 ): Promise<LocationMonster> {
   const result = await client.queryObject<LocationMonster>`
-    INSERT INTO location_monsters (location_id, monster_id) VALUES (${
-    locationMonster.locationId
-  }, ${locationMonster.monsterId}) RETURNING *;
+    INSERT INTO location_monsters (location_id, monster_id) VALUES (${locationMonster.locationId
+    }, ${locationMonster.monsterId}) RETURNING *;
   `;
   return result.rows[0];
 }
@@ -253,11 +247,9 @@ export async function updateLocationMonster(
   locationMonster: LocationMonster,
 ): Promise<LocationMonster> {
   const result = await client.queryObject<LocationMonster>`
-    UPDATE location_monsters SET location_id = ${
-    locationMonster.locationId
-  }, monster_id = ${locationMonster.monsterId} WHERE id = ${
-    locationMonster.id
-  } RETURNING *;
+    UPDATE location_monsters SET location_id = ${locationMonster.locationId
+    }, monster_id = ${locationMonster.monsterId} WHERE id = ${locationMonster.id
+    } RETURNING *;
   `;
   return result.rows[0];
 }
@@ -295,9 +287,8 @@ export async function createHeroItem(
   heroItem: Omit<HeroItem, "id" | "createdAt" | "updatedAt">,
 ): Promise<HeroItem> {
   const result = await client.queryObject<HeroItem>`
-    INSERT INTO hero_items (hero_id, item_id) VALUES (${heroItem.heroId}, ${
-    heroItem.itemId
-  }) RETURNING *;
+    INSERT INTO hero_items (hero_id, item_id) VALUES (${heroItem.heroId}, ${heroItem.itemId
+    }) RETURNING *;
   `;
   return result.rows[0];
 }
@@ -307,9 +298,8 @@ export async function updateHeroItem(
   heroItem: HeroItem,
 ): Promise<HeroItem> {
   const result = await client.queryObject<HeroItem>`
-    UPDATE hero_items SET hero_id = ${heroItem.heroId}, item_id = ${
-    heroItem.itemId
-  } WHERE id = ${heroItem.id} RETURNING *;
+    UPDATE hero_items SET hero_id = ${heroItem.heroId}, item_id = ${heroItem.itemId
+    } WHERE id = ${heroItem.id} RETURNING *;
   `;
   return result.rows[0];
 }
@@ -347,9 +337,8 @@ export async function createMonsterItem(
   monsterItem: Omit<MonsterItem, "id" | "createdAt" | "updatedAt">,
 ): Promise<MonsterItem> {
   const result = await client.queryObject<MonsterItem>`
-    INSERT INTO monster_items (monster_id, item_id) VALUES (${
-    monsterItem.monsterId
-  }, ${monsterItem.itemId}) RETURNING *;
+    INSERT INTO monster_items (monster_id, item_id) VALUES (${monsterItem.monsterId
+    }, ${monsterItem.itemId}) RETURNING *;
   `;
   return result.rows[0];
 }
@@ -359,9 +348,8 @@ export async function updateMonsterItem(
   monsterItem: MonsterItem,
 ): Promise<MonsterItem> {
   const result = await client.queryObject<MonsterItem>`
-    UPDATE monster_items SET monster_id = ${monsterItem.monsterId}, item_id = ${
-    monsterItem.itemId
-  } WHERE id = ${monsterItem.id} RETURNING *;
+    UPDATE monster_items SET monster_id = ${monsterItem.monsterId}, item_id = ${monsterItem.itemId
+    } WHERE id = ${monsterItem.id} RETURNING *;
   `;
   return result.rows[0];
 }
