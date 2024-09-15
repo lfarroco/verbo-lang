@@ -14,7 +14,7 @@ export default async function compile({
 
 	const files = listFilesAt(workingDir + '/models');
 
-	const schemaFile = readFile(verboDir + '/schema.sql');
+	const schemaFile = readFile(verboDir + '/init.sql');
 
 	const compiledFiles = compileFiles(files, workingDir);
 
@@ -29,7 +29,7 @@ Input Details:
 - Each Verbo file is formatted in Markdown and contains:
   - One or more functional descriptions of models.
   - A model may reference other models.
-- The database schema file (schema.sql) is written in standard PostgreSQL statements.
+- The database schema file (init.sql) is written in standard PostgreSQL statements.
 
 Your Output:
 - Generate a single TypeScript file that declares all types described in the database schema.
@@ -55,7 +55,7 @@ A post has a title and content. A post can have multiple users as authors.
 == models/comment.md ==
 A comment has content and belongs to a post.
 
-== schema.sql ==
+== init.sql ==
 
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
@@ -92,7 +92,7 @@ Final Notes:
 	const submitPrompt = `
 ${prompt}
 ${compiledFiles}
-== schema.sql ==
+== init.sql ==
 ${schemaFile}`;
 
 	console.log("The prompt:", submitPrompt);

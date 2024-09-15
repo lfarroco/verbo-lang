@@ -14,7 +14,7 @@ export default async function compile({
 
 	const specs = listFilesAt(workingDir + '/models');
 
-	const schema = readFile(verboDir + '/schema.sql');
+	const schema = readFile(verboDir + '/init.sql');
 
 	const models = readFile(verboDir + '/models.ts');
 
@@ -32,7 +32,7 @@ Input Details:
 - Each Verbo file is formatted in Markdown and contains:
   - One or more functional descriptions of models.
   - A model may reference other models.
-- The database schema file (schema.sql) is written in standard PostgreSQL statements.
+- The database schema file (init.sql) is written in standard PostgreSQL statements.
 - TypeScript types that describe each table in the database schema.
 
 Your Output:
@@ -62,7 +62,7 @@ A user has a name, an email, and many posts.
 == models/post.md ==
 A post has a title and content. A post can have multiple users as authors.
 
-== schema.sql ==
+== init.sql ==
 
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
@@ -128,7 +128,7 @@ Final Notes:
 	const submitPrompt = `
 ${prompt}
 ${compiledSpecs}
-== schema.sql ==
+== init.sql ==
 ${schema}
 == models.ts ==
 ${models}

@@ -38,7 +38,7 @@ run-db:
 	-e POSTGRES_PASSWORD=mysecretpassword \
 	-e PGDATA=/var/lib/postgresql/data/pgdata \
 	-p 55400:5432 \
-	-v "$(shell pwd)"/test/guild/results/schema.sql:/docker-entrypoint-initdb.d/data.sql \
+	-v "$(shell pwd)"/test/guild/results/init.sql:/docker-entrypoint-initdb.d/data.sql \
 	postgres
 
 scaffold:
