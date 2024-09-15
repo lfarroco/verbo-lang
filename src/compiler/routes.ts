@@ -58,7 +58,7 @@ The nested routes are for getting a single user or post by ID, updating or delet
 There's also a route for getting all posts for a user:
 - users/{id}/posts
 
-== db-clients.ts ==
+== db-client.ts ==
 
 \`\`\`typescript
 import { Client } from "https://deno.land/x/postgres/mod.ts";
@@ -85,7 +85,7 @@ import { Router, Context, RouterContext } from "https://deno.land/x/oak/mod.ts";
 import { Client } from "https://deno.land/x/postgres/mod.ts";
 import { User, Post } from "./models.ts";
 
-import * as dbClients from "./db-clients.ts";
+import * as dbClients from "./db-client.ts";
 
 export function handleRoutes(client:Client, router: Router) {
 
@@ -128,6 +128,9 @@ ${prompt}
 ${routes}
 == db-client.ts ==
 ${dbClients}
+
+The functions listed above are the only ones that should be called by the routes.
+
 `;
 
 	console.log("The prompt:", submitPrompt);

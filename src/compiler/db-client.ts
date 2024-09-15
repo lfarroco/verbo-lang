@@ -19,6 +19,7 @@ export default async function compile({
 	const models = readFile(verboDir + '/models.ts');
 
 	const compiledSpecs = compileFiles(specs, workingDir);
+	const routes = readFile(workingDir + '/routes.md');
 
 	const prompt = `
 Task Overview:
@@ -29,9 +30,10 @@ These will be provided as virtual files.
 Input Details:
 - File names are enclosed by double equal signs (==) as delimiters.
 - The Verbo language is an abstract programming language that uses natural language to describe simple, self-contained software systems.
-- Each Verbo file is formatted in Markdown and contains:
+- Each Verbo file is formatted in Markdown. They describe:
   - One or more functional descriptions of models.
-  - A model may reference other models.
+  - Models may reference other models.
+  - Routes that allow interactions with the database.
 - The database schema file (init.sql) is written in standard PostgreSQL statements.
 - TypeScript types that describe each table in the database schema.
 
@@ -46,6 +48,7 @@ Your Output:
   - If a relationship between two models exists, create a function to handle that relationship. Example: getting all posts for a user.
 - Each client function should return a Promise with the result of the operation.
 - You don't need to redeclared the models. Import them from "./models.ts".
+- Your generated functions should be capable of satisfying the requirements of the routes described in the Verbo files.
 
 Key Guidelines:
 - Ambiguity Handling: If any Verbo descriptions are ambiguous or incomplete, make reasonable assumptions and document them clearly in comments.
@@ -128,6 +131,8 @@ Final Notes:
 	const submitPrompt = `
 ${prompt}
 ${compiledSpecs}
+== routes.md ==
+${routes}
 == init.sql ==
 ${schema}
 == models.ts ==
