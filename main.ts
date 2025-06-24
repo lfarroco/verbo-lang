@@ -43,7 +43,7 @@ const DEFAULT_MODELS: Record<string, string> = {
 };
 
 const VALID_PROVIDERS = Object.keys(DEFAULT_MODELS);
-const VALID_TARGETS = ["sql", "model", "db-client", "routes", "class", "function", "react"];
+const VALID_TARGETS = ["sql", "model", "db-client", "routes", "class", "function", "react", "rest-server"];
 
 type AiProviderType = keyof typeof DEFAULT_MODELS;
 type TargetType = typeof VALID_TARGETS[number];
@@ -141,6 +141,15 @@ export async function main(args: string[] = Deno.args): Promise<void> {
   // --- Compilation Dispatch ---
   try {
     switch (target) {
+      case "rest-server":
+        // This single target orchestrates the creation of the entire server.
+        console.log("Generating complete REST server...");
+        await compileSql({ workingDir: sourceDir, verboDir, aiProvider });
+        await compileModel({ workingDir: sourceDir, verboDir, aiProvider });
+        await compileDbClient({ workingDir: sourceDir, verboDir, aiProvider });
+        await compileRoutes({ workingDir: sourceDir, verboDir, aiProvider });
+        // TODO: Add generation for the main server entrypoint, Dockerfile, and automated scaffolding.
+        break;
       case "sql":
         await compileSql({ workingDir: sourceDir, verboDir, aiProvider });
         break;
