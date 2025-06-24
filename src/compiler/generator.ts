@@ -37,6 +37,7 @@ export interface GenerationOptions {
 	promptLogFile: string;
 	responseLogFile: string;
 	startLogMessage: string;
+	extractJson?: boolean;
 }
 
 /**

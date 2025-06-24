@@ -23,73 +23,40 @@ export const getEnv = (
   return value;
 };
 
-export const listFilesAt = (source: string): string[] => {
+export const listFilesAt = (dir: string, extensions: string[]): string[] => {
   const files: string[] = [];
 
-  function readFiles(dir: string) {
-    const entries = Deno.readDirSync(dir);
-
-    for (const entry of entries) {
-      if (entry.isDirectory) {
-        readFiles(`${dir}/${entry.name}`);
-      } else if (entry.isFile && entry.name.endsWith(".md")) {
-
-        files.push(`${dir}/${entry.name}`);
-      }
+  for (const entry of Deno.readDirSync(dir)) {
+    const path = `${dir}/${entry.name}`;
+    if (entry.isDirectory) {
+      files.push(...listFilesAt(path, extensions));
+    } else if (entry.isFile && extensions.some(ext => entry.name.endsWith(`.${ext}`))) {
+      files.push(path);
     }
-
   }
-
-  readFiles(source);
-
   return files;
-
-}
-
-export const listAppFiles = (source: string): string[] => {
-  console.log("Reading source files from: ", source);
-
-  // check if main.md exists
-  if (!Deno.statSync(source + "/main.md")) {
-    throw new Error("main.md not found in source directory");
-  }
-
-  const files = listFilesAt(source);
-
-  const allFiles = files.filter(
-    (file) => file !== `${source}/main.md`
-  ).concat(`${source}/main.md`);
-
-  console.log("all files: ", allFiles)
-
-  return allFiles;
 };
 
 export function readFile(file: string) {
   return Deno.readTextFileSync(file);
 }
 export function createDirIfNotExists(outputPath: string) {
-
   console.log(`Preparing output folder at ${outputPath}`);
-  // check if output folder exists
-  try { !Deno.statSync(outputPath) } catch (_e) {
-
-
-    Deno.mkdirSync(outputPath);
-  }
-
-
-
+  // Use { recursive: true } to avoid errors if the directory exists
+  // and to create parent directories if needed.
+  Deno.mkdirSync(outputPath, { recursive: true });
 }
 export function writefile(destination: string, text: string) {
   console.log(`Writing to ${destination}...`);
-  Deno.writeFileSync(destination, new TextEncoder().encode(text));
+  Deno.writeTextFileSync(destination, text);
 }
 
-export function aggregateFilesForPrompt(sourceDir: string): string {
+export function aggregateFilesForPrompt(sourceDir: string, extensions: string[] = ["md"]): string {
   console.log("Aggregating source files for prompt...");
 
-  const files = listAppFiles(sourceDir);
+  // A simple alphabetical sort is a reasonable default for aggregation.
+  // Specific compilation steps can perform their own ordering if needed.
+  const files = listFilesAt(sourceDir, extensions).sort();
   let compiledFiles = "";
 
   for (const file of files) {
