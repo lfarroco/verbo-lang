@@ -1,0 +1,43 @@
+import { Application } from "jsr:@oak/oak";
+import { router } from "../routes.ts";
+import { pool } from "../db-client.ts";
+
+const app = new Application();
+const port = 8000;
+
+// Logger
+app.use(async (ctx, next) => {
+  await next();
+  const rt = ctx.response.headers.get("X-Response-Time");
+  console.log(`${ctx.request.method} ${ctx.request.url} - ${rt}`);
+});
+
+// Timing
+app.use(async (ctx, next) => {
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+  ctx.response.headers.set("X-Response-Time", `${ms}ms`);
+});
+
+// Use the generated routes
+app.use(router.routes());
+app.use(router.allowedMethods());
+
+// Graceful shutdown
+const controller = new AbortController();
+const { signal } = controller;
+app.addEventListener("listen", ({ hostname, port, secure }) => {
+  console.log(
+    `🚀 Server listening on: ${secure ? "https://" : "http://"}${hostname ?? "localhost"}:${port}`,
+  );
+});
+
+Deno.addSignalListener("SIGINT", () => {
+  console.log("\nGracefully shutting down...");
+  controller.abort();
+  pool.end(); // Close database connections
+  Deno.exit();
+});
+
+await app.listen({ port, signal });

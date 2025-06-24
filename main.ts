@@ -14,6 +14,7 @@ import compileClass from "./src/compiler/compile-class.ts";
 import compileFunction from "./src/compiler/compile-function.ts";
 import compileReact from "./src/compiler/compile-react.ts";
 import testGenerator from "./src/testGenerator.ts";
+import { scaffoldRestServer } from "./src/scaffold.ts";
 
 import { createDirIfNotExists, getEnv } from "./src/utils.ts";
 
@@ -148,7 +149,7 @@ export async function main(args: string[] = Deno.args): Promise<void> {
         await compileModel({ workingDir: sourceDir, verboDir, aiProvider });
         await compileDbClient({ workingDir: sourceDir, verboDir, aiProvider });
         await compileRoutes({ workingDir: sourceDir, verboDir, aiProvider });
-        // TODO: Add generation for the main server entrypoint, Dockerfile, and automated scaffolding.
+        await scaffoldRestServer({ verboDir, outputPath });
         break;
       case "sql":
         await compileSql({ workingDir: sourceDir, verboDir, aiProvider });

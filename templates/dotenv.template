@@ -1,6 +1,7 @@
-PSQL_DB=postgres
-PSQL_USER=postgres
-PSQL_PASSWORD=mysecretpassword
-PSQL_HOST=db
-PSQL_PORT=5432
-API_PORT=8000
+# .env
+# Database connection details
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=user
+DB_PASSWORD=password
+DB_DATABASE=verbodb
