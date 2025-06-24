@@ -1,0 +1,66 @@
+# Verbo-Lang AI Project Context
+
+This document provides a high-level overview of the `verbo-lang` project, intended for AI assistants to quickly understand its purpose, architecture, and goals.
+
+## 1. Core Mission
+
+**Verbo-lang is an experimental programming language where natural language specifications are compiled into functional source code by a Large Language Model (LLM).**
+
+The primary goal is to explore "structured vibe-coding": using descriptive text in a guided, structured way to generate complex applications. The current focus is on generating RESTful web APIs.
+
+## 2. Key Concepts
+
+- **Natural Language as Spec:** The source code for Verbo is a set of Markdown (`.md`) files containing descriptions of models, API routes, and overall logic.
+- **AI-Driven Compilation:** There is no traditional compiler. Instead, a tool orchestrates a series of prompts to an LLM (like Gemini, GPT, or a local Ollama model) to translate the specifications into a target language.
+- **Guided Generation:** The process is not a single "do everything" prompt. It's a pipeline of steps, where each step uses targeted prompts and few-shot examples to guide the AI in generating a specific piece of the application (e.g., database schema, then models, then API handlers).
+
+## 3. Project Structure
+
+A typical `verbo-lang` project has the following file structure:
+
+- `main.md`: The entry point. Contains a high-level description of the application's purpose.
+- `models/`: A directory containing one `.md` file for each data model (e.g., `user.md`, `product.md`). These files describe the properties and relationships of the models.
+- `routes.md`: Defines the API endpoints, their paths, and what they are supposed to do.
+- `.env`: An environment file to store API keys for commercial LLM providers (`GEMINI_KEY`, `OPENAI_KEY`, `ANTHROPIC_KEY`).
+- `Makefile`: Contains helper scripts and the main commands to "compile" the project.
+
+## 4. Workflow
+
+The end-to-end process looks like this:
+
+1.  **Specification:** A developer writes the application logic in `.md` files as described above.
+2.  **Compilation:** The developer runs a command like `make compile`.
+3.  **Orchestration:** The Verbo tool reads the `.md` files.
+4.  **AI Generation (Pipeline):**
+    a. **Schema Generation:** The tool prompts the LLM to convert model descriptions from `models/*.md` into a SQL database schema.
+    b. **Model Generation:** It then prompts the LLM to generate TypeScript/Deno model files corresponding to each table in the schema.
+    c. **DB Client Generation:** The LLM is asked to write database client code (e.g., CRUD functions) for each model.
+    d. **API Handler Generation:** Finally, using the `routes.md` spec and the generated models/clients, the LLM generates the API request handlers.
+5.  **Output:** The generated source code (SQL, TypeScript, etc.) is saved to a results directory.
+
+## 5. Technology Stack
+
+- **Specification Language:** Structured Natural Language (primarily English) in Markdown.
+- **AI Providers:**
+    - Local: Ollama
+    - Cloud: Google Gemini, OpenAI, Anthropic
+- **Generated Application Stack:**
+    - Runtime: Deno
+    - Language: TypeScript
+    - Database: PostgreSQL (inferred from "psql library" mention in `README.md`)
+
+## 6. Project Goals & Roadmap
+
+- **Current Status:** Experimental, with a proof-of-concept for generating a basic REST API.
+- **Roadmap:**
+    1.  **Extensibility:** Allow developers to add new "skills" to the language, such as the ability to make HTTP requests, perform file operations, or generate CLIs.
+    2.  **Test Generation:** Automatically generate unit and integration tests based on the specifications.
+    3.  **AI-Powered Refactoring:** Enable the LLM to analyze the generated code and suggest improvements or perform refactoring.
+
+## 7. How to Assist
+
+When asked to contribute to or use `verbo-lang`:
+
+- **To understand the syntax:** Refer to the examples in `README.md` and look for a `VERBO_SPEC.md` file for a more formal definition. The syntax is intentionally flexible.
+- **When generating Verbo specs (`.md` files):** Follow the structure and style of the examples. Be descriptive and clear about properties, relationships, and endpoint functionality.
+- **When working on the Verbo compiler/tool:** The main task is to improve the prompt engineering and the pipeline orchestration. This involves crafting better prompts, providing better few-shot examples, and potentially breaking down generation steps into smaller, more reliable sub-tasks.
