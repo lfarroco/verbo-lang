@@ -1,4 +1,4 @@
-import { createDirIfNotExists, listAppFiles, readFile, writefile } from "./utils.ts";
+import { createDirIfNotExists, readFile, writefile, aggregateFilesForPrompt } from "./utils.ts";
 
 export default async function testGenerator({
 	outputPath,
@@ -11,20 +11,7 @@ export default async function testGenerator({
 	targetFile: string;
 	aiProvider: (prompt: string) => Promise<string>;
 }) {
-	console.log("Compiling source files...");
-
-	const files = listAppFiles(sourceDir);
-
-	let compiledFiles = "";
-
-	files.forEach((file: string) => {
-		// remove absolute file path from the file name
-		const filteredFileName = file.replace(sourceDir + "/", "");
-		compiledFiles += `== ${filteredFileName} ==\n\n`;
-		const content = readFile(file);
-
-		compiledFiles += content + "\n\n";
-	});
+	const compiledFiles = aggregateFilesForPrompt(sourceDir);
 
 	const code = readFile(targetFile);
 

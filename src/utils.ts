@@ -85,3 +85,18 @@ export function writefile(destination: string, text: string) {
   console.log(`Writing to ${destination}...`);
   Deno.writeFileSync(destination, new TextEncoder().encode(text));
 }
+
+export function aggregateFilesForPrompt(sourceDir: string): string {
+  console.log("Aggregating source files for prompt...");
+
+  const files = listAppFiles(sourceDir);
+  let compiledFiles = "";
+
+  for (const file of files) {
+    const filteredFileName = file.replace(`${sourceDir}/`, "");
+    const content = readFile(file);
+    compiledFiles += `== ${filteredFileName} ==\n\n${content}\n\n`;
+  }
+
+  return compiledFiles;
+}
