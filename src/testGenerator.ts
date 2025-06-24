@@ -1,5 +1,5 @@
-import { createDirIfNotExists, readFile, writefile, aggregateFilesForPrompt } from "./utils.ts";
-import { dirname, fromFileUrl, join } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { createDirIfNotExists, readFile, aggregateFilesForPrompt } from "./utils.ts";
+import { runAiGeneration } from "./compiler/generator.ts";
 
 export default async function testGenerator({
 	outputPath,
@@ -16,12 +16,7 @@ export default async function testGenerator({
 
 	const code = readFile(targetFile);
 
-	const __dirname = dirname(fromFileUrl(import.meta.url));
-	const promptTemplate = await Deno.readTextFile(join(__dirname, "./prompts/test-generator.md"));
-
-	const prompt = `
-${promptTemplate}
-
+	const promptData = `
 This is the specification of the TypeScript program:
 
 ${compiledFiles}
@@ -33,28 +28,18 @@ ${code}
 Now, write the tests for the program.
 `;
 
-	console.log("The test prompt:", prompt);
-
 	createDirIfNotExists(outputPath);
 
-	console.log(
-		"Writing prompt.md to output folder. It contains the prompt sent to the AI provider."
-	); // TODO: include ai provider in the name
-
-	writefile(`${outputPath}/test-prompt.md`, prompt);
-
-	console.log("Submitting code to the AI...");
-
-	let text = await aiProvider(prompt);
-
-
-	writefile(`${outputPath}/${aiProvider}-response.md`, text);
-	text = text.replace("```typescript", "```");
-	text = text.split("```")[1];
-
-	console.log(`Writing index.test.ts to the output folder.`);
-
-	writefile(`${outputPath}/index.test.ts`, text);
+	await runAiGeneration({
+		aiProvider,
+		promptTemplatePath: "../prompts/test-generator.md",
+		promptData: promptData,
+		outputPath: outputPath,
+		outputFile: "index.test.ts",
+		promptLogFile: "test-prompt.md",
+		responseLogFile: "ai-response.md",
+		startLogMessage: "Generating tests...",
+	});
 
 	// run jest test
 
