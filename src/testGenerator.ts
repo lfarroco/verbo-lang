@@ -3,10 +3,12 @@ import { createDirIfNotExists, listAppFiles, readFile, writefile } from "./utils
 export default async function testGenerator({
 	outputPath,
 	sourceDir,
+	targetFile,
 	aiProvider,
 }: {
 	outputPath: string;
 	sourceDir: string;
+	targetFile: string;
 	aiProvider: (prompt: string) => Promise<string>;
 }) {
 	console.log("Compiling source files...");
@@ -24,7 +26,7 @@ export default async function testGenerator({
 		compiledFiles += content + "\n\n";
 	});
 
-	const code = readFile(`${outputPath}/index.ts`);
+	const code = readFile(targetFile);
 
 	const prompt = `
 Your task is to generate tests for a TypeScript program.

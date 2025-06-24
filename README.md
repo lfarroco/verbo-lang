@@ -1,6 +1,6 @@
 # verbo-lang
 
-An experiment on generating a web API using natural language.
+An experiment on generating a web API using natural language. Basically "structured vibe-coding".
 
 ## Table of Contents
 
@@ -135,7 +135,7 @@ code generation, such as writing "the function below returns the square of a
 number," and letting the model generate the function.
 
 Verbo takes this idea further by turning comments into a specification. While
-natural language is used, you still need a basic understanding of how computers
+natural language is used, you still need to understand how computers
 work, as you'll be dealing with variables, functions, and other programming
 concepts.
 
