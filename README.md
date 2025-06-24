@@ -160,6 +160,17 @@ depending on the provider you wish to use.
 
 Check the `Makefile` for more information on how to run the project.
 
+### Clarification Mode
+
+Before compiling, you can ask the AI to analyze your project for ambiguities. This helps catch unclear requirements early. Run the `clarify` command from your project's root directory:
+
+```bash
+# Analyze the project and generate a list of questions
+deno run -A cli.ts clarify
+```
+
+This will create a `clarifications.json` file containing a list of potential issues and questions identified by the AI, allowing you to refine your specifications before generating code.
+
 ## Syntax
 
 For a complete guide to the Verbo language, its constructs, and best practices, please see the official specification document:
