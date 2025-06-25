@@ -50,16 +50,16 @@ function printHelp(): void {
   console.log(`Verbo v${VERSION}`);
   console.log("Usage: verbo [OPTIONS...]");
   console.log("\nOptional flags:");
-  console.log("  -h, --help                  Display this help and exit");
-  console.log("  -V, --version               Output version information and exit");
-  console.log("  -g, --generate-tests        Generate tests for the output code");
-  console.log("  -v, --verbose               Enable verbose output");
-  console.log("  -d, --dir <path>            Source directory for Verbo files. Default: ./");
-  console.log("  -o, --output <path>         Output directory for generated files. Default: dist/");
-  console.log("  -e, --envfile <path>        Path to .env file. Default: .env");
-  console.log(`  -a, --aiprovider <name>   AI provider (${VALID_PROVIDERS.join(", ")}). Default: ollama`);
-  console.log("  -m, --model <name>          AI model to use. See provider for defaults.");
-  console.log(`  -t, --target <type>         Compilation target (${VALID_TARGETS.join(", ")}). Default: function`);
+  console.log("  -h, --help              Display this help and exit");
+  console.log("  -V, --version           Output version information and exit");
+  console.log("  -g, --generate-tests    Generate tests for the output code");
+  console.log("  -v, --verbose           Enable verbose output");
+  console.log("  -d, --dir <path>        Source directory for Verbo files. Default: ./");
+  console.log("  -o, --output <path>     Output directory for generated files. Default: dist/");
+  console.log("  -e, --envfile <path>    Path to .env file. Default: .env");
+  console.log(`  -a, --aiprovider <name> AI provider (${VALID_PROVIDERS.join(", ")}). Default: ollama`);
+  console.log("  -m, --model <name>      AI model to use. See provider for defaults.");
+  console.log(`  -t, --target <type>     Compilation target (${VALID_TARGETS.join(", ")}). Default: function`);
 }
 
 function getProvider(
