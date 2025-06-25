@@ -1,5 +1,4 @@
-import { parse } from "https://deno.land/std@0.200.0/flags/mod.ts";
-import type { Args } from "https://deno.land/std@0.200.0/flags/mod.ts";
+import { parseArgs } from "https://deno.land/std@0.224.0/cli/parse_args.ts";
 
 import { gemini } from "./src/api/gemini.ts";
 import { openai } from "./src/api/openai.ts";
@@ -14,27 +13,12 @@ import compileClass from "./src/compiler/compile-class.ts";
 import compileFunction from "./src/compiler/compile-function.ts";
 import compileReact from "./src/compiler/compile-react.ts";
 import testGenerator from "./src/testGenerator.ts";
-import { scaffoldRestServer } from "./src/scaffold.ts";
 
 import { createDirIfNotExists, getEnv } from "./src/utils.ts";
+import { scaffoldRestServer } from "./scaffold.ts";
 
 // --- Constants ---
 const VERSION = "0.0.1";
-
-const BOOLEAN_ARGS = ["help", "generate-tests", "verbose", "version"];
-const STRING_ARGS = ["dir", "output", "envfile", "aiprovider", "model", "target"];
-const ALIASES = {
-  "help": "h",
-  "version": "V",
-  "generate-tests": "g",
-  "verbose": "v",
-  "dir": "d",
-  "output": "o",
-  "envfile": "e",
-  "aiprovider": "a",
-  "model": "m",
-  "target": "t",
-};
 
 const DEFAULT_MODELS: Record<string, string> = {
   gemini: "gemini-1.5-flash-latest",
@@ -43,12 +27,22 @@ const DEFAULT_MODELS: Record<string, string> = {
   anthropic: "claude-3-haiku-20240307",
 };
 
-const VALID_PROVIDERS = Object.keys(DEFAULT_MODELS);
+const VALID_PROVIDERS = ["gemini", "openai", "ollama", "anthropic"];
 const VALID_TARGETS = ["sql", "model", "db-client", "routes", "class", "function", "react", "rest-server"];
 
-type AiProviderType = keyof typeof DEFAULT_MODELS;
+type AiProviderType = "gemini" | "openai" | "ollama" | "anthropic";
 type TargetType = typeof VALID_TARGETS[number];
 type AiProviderFn = (prompt: string) => Promise<string>;
+
+interface CompilationContext {
+  sourceDir: string;
+  outputPath: string;
+  verboDir: string;
+  aiProvider: AiProviderFn;
+  target: TargetType;
+  verbose: boolean;
+  generateTests: boolean;
+}
 
 // --- Helper Functions ---
 
@@ -89,13 +83,74 @@ function getProvider(
   }
 }
 
+// --- Orchestration Functions ---
+
+async function runRestServerCompilation(context: CompilationContext): Promise<void> {
+  console.log("Generating complete REST server...");
+  const { sourceDir, verboDir, outputPath, aiProvider } = context;
+  const compileOptions = { workingDir: sourceDir, verboDir, aiProvider };
+
+  await compileSql(compileOptions);
+  await compileModel(compileOptions);
+  await compileDbClient(compileOptions);
+  await compileRoutes(compileOptions);
+  await scaffoldRestServer({ verboDir, outputPath });
+}
+
+async function runSingleCompilation(context: CompilationContext): Promise<void> {
+  const { target, sourceDir, outputPath, verboDir, aiProvider, generateTests } = context;
+  const compileOptions = { workingDir: sourceDir, verboDir, aiProvider };
+
+  switch (target) {
+    case "sql":
+      await compileSql(compileOptions);
+      break;
+    case "model":
+      await compileModel(compileOptions);
+      break;
+    case "db-client":
+      await compileDbClient(compileOptions);
+      break;
+    case "routes":
+      await compileRoutes(compileOptions);
+      break;
+    case "class":
+      await compileClass({ sourceDir, outputPath, aiProvider });
+      break;
+    case "function":
+      await compileFunction({ sourceDir, outputPath, aiProvider });
+      break;
+    case "react":
+      await compileReact({ sourceDir, outputPath, aiProvider });
+      break;
+  }
+
+  if (generateTests) {
+    if (["class", "function", "react"].includes(target)) {
+      console.log("Generating tests...");
+      const targetFile = `${outputPath}/${target === "react" ? "index.tsx" : "index.ts"}`;
+      await testGenerator({ sourceDir, outputPath, targetFile, aiProvider });
+    } else {
+      console.warn(`Test generation is not supported for target "${target}".`);
+    }
+  }
+}
+
 // --- Main Execution ---
 
 export async function main(args: string[] = Deno.args): Promise<void> {
-  const options: Args = parse(args, {
-    alias: ALIASES,
-    boolean: BOOLEAN_ARGS,
-    string: STRING_ARGS,
+  const options = parseArgs(args, {
+    alias: {
+      "help": "h", "version": "V", "generate-tests": "g", "verbose": "v",
+      "dir": "d", "output": "o", "envfile": "e", "aiprovider": "a",
+      "model": "m", "target": "t",
+    },
+    boolean: ["help", "generate-tests", "verbose", "version"],
+    string: ["dir", "output", "envfile", "aiprovider", "model", "target"],
+    default: {
+      dir: "./", output: "dist/", envfile: ".env",
+      aiprovider: "ollama", target: "function",
+    },
   });
 
   if (options.help) {
@@ -108,20 +163,16 @@ export async function main(args: string[] = Deno.args): Promise<void> {
     return;
   }
 
-  const verbose = options.verbose || false;
+  const verbose = options.verbose;
   if (verbose) {
     console.log("CLI Options:", options);
   }
 
-  // --- Configuration ---
-  const sourceDir = options.dir || "./";
-  const outputPath = options.output || "dist/";
-  const envfile = options.envfile || ".env";
-  const dotEnvFilePath = `${Deno.cwd()}/${envfile}`;
-  const aiProviderName = (options.aiprovider || "ollama") as AiProviderType;
-  const target = (options.target || "function") as TargetType;
-  const verboDir = `${sourceDir}/.verbo`;
+  // --- Configuration & Validation ---
+  const aiProviderName = options.aiprovider as AiProviderType;
+  const target = options.target as TargetType;
 
+  // deno-lint-ignore no-explicit-any
   if (!VALID_PROVIDERS.includes(aiProviderName)) {
     console.error(`Error: Invalid AI provider "${aiProviderName}". Valid options are: ${VALID_PROVIDERS.join(", ")}`);
     return;
@@ -132,56 +183,30 @@ export async function main(args: string[] = Deno.args): Promise<void> {
     return;
   }
 
-  const model = options.model || DEFAULT_MODELS[aiProviderName];
+  const model = options.model || DEFAULT_MODELS[aiProviderName as keyof typeof DEFAULT_MODELS];
+  const dotEnvFilePath = `${Deno.cwd()}/${options.envfile}`;
+  const verboDir = `${options.dir}/.verbo`;
 
   console.log(`Starting compilation for target "${target}"...`);
 
   createDirIfNotExists(verboDir);
-  const aiProvider = getProvider(aiProviderName, model, dotEnvFilePath);
+
+  const context: CompilationContext = {
+    sourceDir: options.dir,
+    outputPath: options.output,
+    verboDir,
+    aiProvider: getProvider(aiProviderName, model, dotEnvFilePath),
+    target,
+    verbose,
+    generateTests: options["generate-tests"],
+  };
 
   // --- Compilation Dispatch ---
   try {
-    switch (target) {
-      case "rest-server":
-        // This single target orchestrates the creation of the entire server.
-        console.log("Generating complete REST server...");
-        await compileSql({ workingDir: sourceDir, verboDir, aiProvider });
-        await compileModel({ workingDir: sourceDir, verboDir, aiProvider });
-        await compileDbClient({ workingDir: sourceDir, verboDir, aiProvider });
-        await compileRoutes({ workingDir: sourceDir, verboDir, aiProvider });
-        await scaffoldRestServer({ verboDir, outputPath });
-        break;
-      case "sql":
-        await compileSql({ workingDir: sourceDir, verboDir, aiProvider });
-        break;
-      case "model":
-        await compileModel({ workingDir: sourceDir, verboDir, aiProvider });
-        break;
-      case "db-client":
-        await compileDbClient({ workingDir: sourceDir, verboDir, aiProvider });
-        break;
-      case "routes":
-        await compileRoutes({ workingDir: sourceDir, verboDir, aiProvider });
-        break;
-      case "class":
-        await compileClass({ sourceDir, outputPath, aiProvider });
-        break;
-      case "function":
-        await compileFunction({ sourceDir, outputPath, aiProvider });
-        break;
-      case "react":
-        await compileReact({ sourceDir, outputPath, aiProvider });
-        break;
-    }
-
-    if (options["generate-tests"]) {
-      if (["class", "function", "react"].includes(target)) {
-        console.log("Generating tests...");
-        const targetFile = `${outputPath}/${target === 'react' ? 'index.tsx' : 'index.ts'}`;
-        await testGenerator({ sourceDir, outputPath, targetFile, aiProvider });
-      } else {
-        console.warn(`Test generation is not supported for target "${target}".`);
-      }
+    if (context.target === "rest-server") {
+      await runRestServerCompilation(context);
+    } else {
+      await runSingleCompilation(context);
     }
 
     console.log("Compilation finished successfully.");

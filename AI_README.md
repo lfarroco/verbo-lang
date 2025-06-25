@@ -13,6 +13,7 @@ The primary goal is to explore "structured vibe-coding": using descriptive text 
 - **Natural Language as Spec:** The source code for Verbo is a set of Markdown (`.md`) files containing descriptions of models, API routes, and overall logic.
 - **AI-Driven Compilation:** There is no traditional compiler. Instead, a tool orchestrates a series of prompts to an LLM (like Gemini, GPT, or a local Ollama model) to translate the specifications into a target language.
 - **Guided Generation:** The process is not a single "do everything" prompt. It's a pipeline of steps, where each step uses targeted prompts and few-shot examples to guide the AI in generating a specific piece of the application (e.g., database schema, then models, then API handlers).
+- **Modular Prompt Templates:** The compiler uses dedicated, high-quality prompt templates stored in `.prompt.md` files. These templates are highly specific, include best practices, and use few-shot examples to ensure the LLM produces consistent, robust code.
 - **Proactive Ambiguity Resolution:** Before compilation, an AI-powered `clarify` command analyzes the specifications for vague terms, contradictions, or incomplete logic. This generates a list of questions for the developer, ensuring a more robust final output.
 
 ## 3. Project Structure
@@ -24,7 +25,8 @@ A typical `verbo-lang` project has the following file structure:
   - `models/`: A directory with `.md` files for each data model.
   - `routes.md`: Defines API endpoints and their functionality.
 - **Tooling & Configuration:**
-  - `cli.ts`: The main Deno CLI entrypoint for commands like `clarify` and `compile`.
+  - `main.ts`: The main Deno CLI entrypoint for commands like `clarify` and `compile`.
+  - `src/prompts/`: A directory containing the modular `.prompt.md` files used by the compiler.
   - `.env`: Stores API keys for LLM providers.
   - `Makefile`: Contains helper scripts for running commands.
 - **Documentation:**
@@ -43,10 +45,10 @@ The end-to-end process looks like this:
 4.  **Orchestration:** The Verbo tool reads the refined `.md` files.
 5.  **AI Generation (Pipeline):**
     a. **Schema Generation:** The tool prompts the LLM to convert model descriptions from `models/*.md` into a SQL database schema.
-    b. **Model Generation:** It then prompts the LLM to generate TypeScript/Deno model files corresponding to each table in the schema.
-    c. **DB Client Generation:** The LLM is asked to write database client code (e.g., CRUD functions) for each model.
-    d. **API Handler Generation:** Finally, using the `routes.md` spec and the generated models/clients, the LLM generates the API request handlers.
-6.  **Output:** The generated source code (SQL, TypeScript, etc.) is saved to a results directory.
+    b. **Model & DB Client Generation:** It then prompts the LLM to generate TypeScript/Deno model files and corresponding database client code (e.g., CRUD functions) for each model.
+    c. **API Handler & Router Generation:** Using the `routes.md` spec and the generated models/clients, the LLM generates the API request handlers and a router file to wire them together.
+    d. **Server Scaffolding:** A high-quality server entry point (`main.ts`) is generated from a dedicated template. This includes modern Deno APIs, middleware for logging and error handling, and graceful shutdown logic.
+6.  **Output:** The complete, runnable Deno application source code (SQL, TypeScript, etc.) is saved to a results directory.
 
 ## 5. Technology Stack
 
@@ -75,3 +77,4 @@ When asked to contribute to or use `verbo-lang`:
 - **To understand the syntax:** Refer to the examples in `README.md` and look for a `VERBO_SPEC.md` file for a more formal definition. The syntax is intentionally flexible.
 - **When generating Verbo specs (`.md` files):** Follow the structure and style of the examples. Be descriptive and clear about properties, relationships, and endpoint functionality. After writing specs, consider running the `clarify` command to check for issues before compiling.
 - **When working on the Verbo compiler/tool:** The main task is to improve the prompt engineering and the pipeline orchestration. This involves crafting better prompts, providing better few-shot examples, and potentially breaking down generation steps into smaller, more reliable sub-tasks.
+- **To improve code generation:** The best way to improve a generation step is to create or refine a dedicated prompt file in `src/prompts/`. Follow the existing `rest_server.prompt.md` as a template for quality and structure.
