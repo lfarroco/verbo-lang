@@ -26,6 +26,7 @@ services:
       GEMINI_KEY: ${GEMINI_KEY:-}
       OPENAI_KEY: ${OPENAI_KEY:-}
       ANTHROPIC_KEY: ${ANTHROPIC_KEY:-}
+      DEEPSEEK_KEY: ${DEEPSEEK_KEY:-}
       # Local AI — defaults to the ollama service on this compose network.
       OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
     volumes:

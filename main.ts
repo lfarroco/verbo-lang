@@ -4,6 +4,7 @@ import { gemini } from "./src/api/gemini.ts";
 import { openai } from "./src/api/openai.ts";
 import { anthropic } from "./src/api/anthropic.ts";
 import { ollama } from "./src/api/ollama.ts";
+import { deepseek } from "./src/api/deepseek.ts";
 
 import { createDirIfNotExists, getEnv } from "./src/utils.ts";
 import clarify from "./src/commands/clarify.ts";
@@ -16,11 +17,12 @@ const DEFAULT_MODELS: Record<string, string> = {
   openai: "gpt-4o-mini",
   ollama: "codegemma",
   anthropic: "claude-3-haiku-20240307",
+  deepseek: "deepseek-v4-flash",
 };
 
-const VALID_PROVIDERS = ["gemini", "openai", "ollama", "anthropic"];
+const VALID_PROVIDERS = ["gemini", "openai", "ollama", "anthropic", "deepseek"];
 
-type AiProviderType = "gemini" | "openai" | "ollama" | "anthropic";
+type AiProviderType = "gemini" | "openai" | "ollama" | "anthropic" | "deepseek";
 type AiProviderFn = (prompt: string) => Promise<string>;
 
 // --- Helper Functions ---
@@ -63,6 +65,9 @@ function getProvider(
     case "anthropic":
       console.log(`Using Anthropic with model: ${model}`);
       return anthropic(getEnv(dotEnvFilePath, "ANTHROPIC_KEY"), model);
+    case "deepseek":
+      console.log(`Using DeepSeek with model: ${model}`);
+      return deepseek(getEnv(dotEnvFilePath, "DEEPSEEK_KEY"), model);
     case "ollama":
       console.log(`Using Ollama with model: ${model}`);
       return ollama(model);

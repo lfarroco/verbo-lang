@@ -20,14 +20,14 @@ that passes `deno check` (extraction gate per DESIGN §15).
 
 ### A. DeepSeek provider
 
-- [ ] `src/api/deepseek.ts` — OpenAI-compatible adapter
+- [x] `src/api/deepseek.ts` — OpenAI-compatible adapter
   - `POST https://api.deepseek.com/chat/completions`
   - `max_tokens: 8192` (reasoning model — otherwise `content` truncates)
   - Throw on `finish_reason === "length"` or empty `content`
-- [ ] Wire into `main.ts`: `VALID_PROVIDERS`, `DEFAULT_MODELS`
+- [x] Wire into `main.ts`: `VALID_PROVIDERS`, `DEFAULT_MODELS`
   (`deepseek: "deepseek-v4-flash"`), `AiProviderType`, `getProvider`,
   `printHelp`
-- [ ] `docker-compose.yml` — pass `DEEPSEEK_KEY: ${DEEPSEEK_KEY:-}` to `dev`
+- [x] `docker-compose.yml` — pass `DEEPSEEK_KEY: ${DEEPSEEK_KEY:-}` to `dev`
 
 ### B. Extraction
 

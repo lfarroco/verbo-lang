@@ -383,7 +383,7 @@ Stages:
 ## 13. What we keep vs. remove
 
 ### Keep
-- `src/api/*` — 4 AI provider adapters (Ollama, Gemini, OpenAI, Anthropic). Used by extraction, clarify, and interview.
+- `src/api/*` — 5 AI provider adapters (Ollama, Gemini, OpenAI, Anthropic, DeepSeek). Used by extraction, clarify, and interview.
 - `src/prompts/clarify.md` — the clarify prompt template.
 - `test/guild/` — the guild spec fixture (plain `.md`, no syntax added).
 - `test/todo/` — the todo spec fixture.
