@@ -151,4 +151,4 @@ A VS Code dev container is available at `.devcontainer/`.
 
 ## Roadmap
 
-See [docs/roadmap.md](./docs/roadmap.md) and [docs/DESIGN.md](./docs/DESIGN.md) §14.
+See [docs/roadmap.md](./docs/roadmap.md), [docs/DESIGN.md](./docs/DESIGN.md), and the current milestone's [task list](./docs/tasks.md).
