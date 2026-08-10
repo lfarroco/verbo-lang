@@ -1,122 +1,102 @@
 # verbo
 
-A specification engineering tool. Write data models in flavored Markdown, validate them deterministically, and resolve ambiguities through AI-assisted interviews.
+A specification engineering tool. Describe data models in loose natural language. Verbo interviews you to resolve ambiguity, writing each answer back into your files — the same `.md` becomes progressively more precise until it's ready for an AI coding tool to consume.
 
-> **Status (2026 redesign):** Verbo has pivoted from code generation to **specification engineering**. It validates specifications — not generates application code. Flavored Markdown specs are the source of truth; a deterministic parser extracts structure; TypeScript types and constraint assertions are generated as validation output; ambiguity is resolved through an interactive `interview` that writes answers back into the specs. **The authoritative design reference is [`docs/DESIGN.md`](./docs/DESIGN.md).**
+> **Status (2026 redesign):** Verbo has pivoted from code generation to **specification engineering**. You write loose Markdown. Verbo's interview loop asks questions and writes answers directly into your files, refining them in place. The end result is the same file you wrote — now unambiguous enough for Claude Code, Cursor, or Copilot to read and generate code from. TypeScript types are generated internally for verification only. **The authoritative design reference is [`docs/DESIGN.md`](./docs/DESIGN.md).**
 
 ## Table of Contents
 
 - [Demo](#demo)
 - [How it works](#how-it-works)
-- [Flavored Markdown](#flavored-markdown)
+- [Writing specs](#writing-specs)
 - [Getting Started](#getting-started)
 - [Development](#development)
 
 ## Demo
 
-Given a directory with flavored Markdown files:
+Given plain Markdown files describing your models:
 
-### models/hero.md
-
-```markdown
-<!-- verbo:model -->
-
-Heroes are the playable characters in the RPG Guild Simulator.
-
-## Properties
-- `name`: string (required)
-- `level`: number [1..100]
-- `class`: [Warrior, Mage, Rogue, Cleric]
-- `experience`: number (>=0)
-- `health`: number [10..]
-- `attack`: number (>0)
-- `location`: → [[Location]]
-
-## Relationships
-- A hero can have multiple → [[Item]].
-- A hero belongs to a → [[Location]].
-```
-
-### models/item.md
+### models/student.md
 
 ```markdown
-<!-- verbo:model -->
+# Student
 
-## Properties
-- `name`: string (required)
-- `value`: number (>0)
+Students are enrolled in the school and can take multiple classes.
+
+Properties:
+
+- name: The full name of the student.
+- email: The student's school email address (must be valid).
+- gradeLevel: The student's grade level (9 to 12).
+- enrollmentDate: The date the student enrolled.
+
+Relationships:
+
+- A student can enroll in multiple classes.
 ```
 
-### models/location.md
+### models/class.md
 
 ```markdown
-<!-- verbo:model -->
+# Class
 
-## Properties
-- `name`: string (required)
-- `description`: string
+Classes are taught by a teacher and attended by students.
 
-## Relationships
-- A location can have multiple → [[Monster]].
+Properties:
+
+- name: The name of the class.
+- subject: The subject of the class.
+- room: The room number where the class meets.
+- maxStudents: The maximum number of students (1 to 30).
+
+Relationships:
+
+- A class is taught by one teacher.
+- A class can have multiple students.
 ```
 
-### models/monster.md
+No special syntax. No annotations. Just the way you'd explain your models to a teammate.
 
-```markdown
-<!-- verbo:model -->
+When you run `verbo check`, Verbo:
 
-## Properties
-- `name`: string (required)
-- `level`: number [1..100]
-- `health`: number (>0)
-- `attack`: number (>0)
-
-## Relationships
-- A monster can drop multiple → [[Item]].
-```
-
-When checked, Verbo:
-
-1. **Parses** all `.md` files deterministically — no LLM, instant.
-2. **Generates `types.verbo.ts`** — TypeScript type definitions for all models, validated by `deno check`.
-3. **Generates `.verbo/validate.ts`** — constraint assertions that catch violations like `health: 5` when the spec says `[10..]`.
-4. **Runs clarify** — an AI-powered pass that finds vague language, contradictions, and undefined references.
-5. **Offers interview** — interactive resolution of ambiguities, with answers written back into the `.md` files.
+1. **Extracts** structure from your prose using an LLM — types, constraints, relationships.
+2. **Validates internally** — generates TypeScript types and constraint assertions, runs `deno check`. Failures feed back to the LLM for correction.
+3. **Runs clarify** — an AI-powered pass that finds vague language, imprecise declarations, contradictions, and missing definitions.
+4. **Offers interview** — interactive collaborator that asks questions and writes answers directly into your `.md` files. Each round makes the file more precise.
 
 ## How it works
 
-Verbo has two layers: a **deterministic core** that processes structure, and an **AI-assisted layer** that resolves ambiguity.
+Verbo has two layers:
 
-### Deterministic core (zero LLM, zero cost)
+### LLM-powered extraction
 
-1. **Parser** — scans flavored `.md` files for `<!-- verbo:model -->` and `<!-- verbo:data -->` directives, extracts properties, constraints, wiki-links, and relationships.
-2. **Type generator** — produces `types.verbo.ts` from the parsed structure. `deno check` validates the type graph: undefined references, circular types, and type mismatches are caught by the TypeScript compiler.
-3. **Assertion generator** — produces `.verbo/validate.ts` for value-level constraints (ranges, enumerations, required fields). Running it checks that spec-defined data satisfies all declared constraints.
+An LLM reads your natural language specs and extracts structured data — model names, properties, types, constraints, and relationships. No parser to maintain. No syntax to learn. The LLM handles the variation in how people describe things.
 
-### AI-assisted layer (LLM-powered)
+If the extraction produces types that fail `deno check`, the errors are fed back to the LLM in a **repair loop** (max 3 retries). This is what makes LLM-based extraction reliable.
 
-4. **Clarify** — one LLM call analyzes the full spec for vagueness, contradictions, and missing definitions. Results in `clarifications.json`.
-5. **Interview** — interactive Q&A that walks through severity-ordered ambiguities and writes resolutions back into the `.md` files, with a full audit trail under `.verbo/clarifications/`.
+### Deterministic validation
 
-The loop (parse → generate → clarify → interview → repeat) continues until the spec is clean.
+- **`deno check`** validates the generated type graph — catches undefined references, circular types, type mismatches.
+- **`.verbo/validate.ts`** checks value-level constraints (ranges, required fields, positive values) that TypeScript can't express.
 
-## Flavored Markdown
+### AI-assisted clarification
 
-Verbo specs are standard `.md` with lightweight conventions:
+- **Clarify** — one LLM call finds vagueness, imprecise declarations, contradictions, and missing definitions in your prose.
+- **Interview** — an interactive collaborator. The LLM proposes precision improvements for ambiguous declarations (e.g., "product code: not empty" → "a unique string identifier, cannot be empty"). You accept, choose an alternative, or write your own. All changes are written back into your `.md` files with a full audit trail.
 
-| Convention | Example | Purpose |
-|---|---|---|
-| `<!-- verbo:model -->` | File-level directive | Marks a data model for the parser |
-| `<!-- verbo:data -->` | File-level directive | Marks example/test data |
-| `` `name`: type `` | `` `level`: number `` | Property with type annotation |
-| `[min..max]` | `[1..100]` | Range constraint |
-| `(>0)`, `(required)` | `(>=0)` | Comparison / required constraint |
-| `[A, B, C]` | `[Warrior, Mage]` | Enumeration |
-| `→ [[Model]]` | `→ [[Location]]` | Typed cross-reference |
+The loop (extract → validate → clarify → interview → repeat) continues until your specs are clean.
 
-Files without directives are free-form prose — the clarify system still analyzes them, but the deterministic parser ignores them.
+## Writing specs
 
-For a complete guide, see [**the Verbo language specification**](./VERBO_SPEC.md) and the [**design reference**](./docs/DESIGN.md).
+There's no required syntax. Write the way you'd explain your models to a teammate. Some conventions help the LLM extract better:
+
+- **One model per file** — put each model in its own `models/` file.
+- **Use bullet points for properties** — `- name: description` patterns.
+- **Be explicit about ranges and constraints** — "9 to 12" is clearer than "a high school student."
+- **Name your relationships** — "A student can enroll in multiple classes" tells the LLM which models are connected.
+- **Add a `main.md`** — gives the LLM project-level context.
+
+For a complete guide, see the [**design reference**](./docs/DESIGN.md).
 
 ## Getting Started
 
@@ -133,8 +113,11 @@ main.md
 ### Running Verbo
 
 ```bash
-# Check specs: parse, generate types, validate constraints, run clarify
+# Check specs: extract, generate types, validate, run clarify
 deno run -A main.ts check
+
+# Analyze specs for ambiguities only
+deno run -A main.ts clarify
 
 # Resolve ambiguities interactively
 deno run -A main.ts interview
@@ -148,42 +131,24 @@ OPENAI_KEY=...
 ANTHROPIC_KEY=...
 ```
 
-See the `Makefile` for more commands.
-
-### Clarify Mode
-
-Before finalizing your specs, ask the AI to analyze for ambiguities:
-
-```bash
-deno run -A main.ts clarify
-```
-
-This creates a `clarifications.json` file with potential issues, allowing you to refine your specifications before sharing them.
-
 ## Development (Docker)
 
 The recommended way to develop Verbo is inside Docker:
 
 ```bash
-# one-time: build the dev image
 docker compose build dev
 cp .env.example .env
 
-# run deno in the dev container
 ./dev --version
 ./dev test
 ./dev check main.ts
-./dev fmt --check
 
-# open a shell in the container
 ./dev shell
-
-# optional: local AI provider
 ./dev ollama start && ./dev ollama pull codegemma
 ```
 
-Everything is bind-mounted, so your edits on the host are live inside the container. A VS Code dev container is available at `.devcontainer/`.
+A VS Code dev container is available at `.devcontainer/`.
 
 ## Roadmap
 
-See [docs/roadmap.md](./docs/roadmap.md) and [docs/DESIGN.md](./docs/DESIGN.md) §14 for the phased plan. The focus is on specification engineering — validated specs, not generated code.
+See [docs/roadmap.md](./docs/roadmap.md) and [docs/DESIGN.md](./docs/DESIGN.md) §14.

@@ -1,263 +1,269 @@
-# Verbo Specification Language v0.2
+# Verbo Specification Guide
 
 ## 1. Introduction
 
-**Verbo** is a specification language for data models. It uses **flavored Markdown** — standard Markdown with lightweight conventions — to define models, their properties, constraints, and relationships. Specifications are human-readable and deterministically parseable.
+Verbo specifications are plain Markdown files. You start with loose natural language. The interview asks questions and writes answers directly into your files, making them progressively more precise. The end result is the same file — now unambiguous enough for both humans and AI coding tools to consume.
 
-This document defines the syntax, conventions, and best practices for writing Verbo specifications.
+## 2. Input: loose natural language
 
-## 2. Core Concepts
+You write plain Markdown. No syntax, no annotations. Describe your models the way you'd explain them to a teammate. The LLM does the interpretation.
 
-- **Markdown as Source of Truth:** Verbo files are standard Markdown (`.md`). All conventions are valid Markdown — a non-technical reader sees ordinary documentation.
-- **Flavored, not a Grammar:** Verbo uses named conventions (directives, annotations, wiki-links), not a formal grammar. The deterministic parser extracts structure reliably without LLM interpretation.
-- **Structured + Prose:** Structure comes from conventions (property lists, constraints); semantics and behavior come from natural language prose. The parser handles structure; the AI clarify system handles prose.
-- **Models as the Unit of Specification:** Each model is defined in its own file with a `<!-- verbo:model -->` directive.
+While there's no required syntax, certain patterns help the LLM extract better:
 
-## 3. File Directives
+### 2.1 One model per file
 
-### 3.1 Model directive
+Place each data model in its own file under a `models/` directory:
 
-A `<!-- verbo:model -->` HTML comment marks a file as a data model definition. The parser extracts properties, constraints, and relationships from the content below it.
-
-```markdown
-<!-- verbo:model -->
-
-# Hero
-
-Heroes are the playable characters in the RPG Guild Simulator.
-
-## Properties
-- `name`: string (required)
-- `level`: number [1..100]
-...
+```
+models/
+  student.md
+  teacher.md
+  class.md
+main.md
 ```
 
-Files without a directive are treated as free-form prose. The clarify system still analyzes them, but the parser ignores them for structure.
+### 2.2 Property descriptions
 
-### 3.2 Data directive
-
-A `<!-- verbo:data -->` directive marks spec-defined example or test data. Named data blocks within are checked against model constraints.
+List properties with a name and description. Bullet points work well:
 
 ```markdown
-<!-- verbo:data -->
+Properties:
 
-## defaultHero
-- name: "Aragorn"
-- level: 5
-- class: Warrior
-- health: 20
+- name: The full name of the student.
+- email: The student's school email address (must be valid).
+- gradeLevel: The student's grade level (9 to 12).
+- enrollmentDate: The date the student enrolled.
 ```
 
-## 4. Properties
+The LLM extracts:
+- `name` → string, required
+- `email` → string, format hint (email)
+- `gradeLevel` → number, range [9, 12]
+- `enrollmentDate` → date
 
-Properties are defined under a `## Properties` heading as Markdown list items. Each property has a backtick-quoted name, a type, and optional constraints.
+### 2.3 Constraints in prose
 
-### 4.1 Basic syntax
+Embed constraints naturally in the description:
 
-```markdown
-- `propertyName`: type [constraints]
-```
-
-### 4.2 Primitive types
-
-| Type | Description | Example |
-|---|---|---|
-| `string` | Text value | `` `name`: string `` |
-| `number` | Numeric value | `` `age`: number `` |
-| `boolean` | True/false value | `` `isActive`: boolean `` |
-| `date` | Date/time value | `` `createdAt`: date `` |
-
-### 4.3 Reference types
-
-A `→ [[ModelName]]` creates a typed reference to another model. The parser resolves these into TypeScript type references.
-
-```markdown
-- `location`: → [[Location]]
-```
-
-### 4.4 Enum types
-
-List allowed values in square brackets. The parser infers the type and generates a union type.
-
-```markdown
-- `class`: [Warrior, Mage, Rogue, Cleric]
-```
-
-## 5. Constraints
-
-Constraints follow the type annotation, separated by whitespace.
-
-### 5.1 Required
-
-```markdown
-- `name`: string (required)
-```
-
-Marks a property as non-optional, non-nullable.
-
-### 5.2 Range constraints
-
-```markdown
-- `level`: number [1..100]      # min..max (inclusive)
-- `health`: number [10..]       # min only
-- `score`: number [..999]       # max only
-```
-
-### 5.3 Comparison constraints
-
-```markdown
-- `experience`: number (>=0)    # non-negative
-- `value`: number (>0)          # positive
-- `discount`: number (<100)     # less than
-```
-
-### 5.4 Auto-populated
-
-```markdown
-- `createdAt`: date (auto)
-- `updatedAt`: date (auto)
-```
-
-### 5.5 Multiple constraints
-
-Constraints can be combined:
-
-```markdown
-- `age`: number (required) [0..150]
-- `score`: number (>=0) [..100]
-```
-
-## 6. Relationships
-
-Relationships are declared under a `## Relationships` heading using natural language with wiki-links.
-
-### 6.1 Cardinality
-
-The parser recognizes these patterns:
-
-| Pattern | Cardinality |
+| Prose | Extracted constraint |
 |---|---|
-| "has many", "can have multiple", "has multiple" | One-to-many |
-| "belongs to", "has one", "references" | Many-to-one |
+| "(9 to 12)" | Range: min=9, max=12 |
+| "(must be positive)" | Positive: >0 |
+| "(must be valid)" | Format hint (email) |
+| "cannot be empty" | Required |
 
-### 6.2 Examples
-
+**Good:**
 ```markdown
-## Relationships
-- A hero can have multiple → [[Item]].
-- A hero belongs to a → [[Location]].
-- A location can have multiple → [[Monster]].
-- A monster can drop multiple → [[Item]].
+- capacity: The maximum number of students (1 to 30).
+- email: The student's school email address (must be valid).
+- gradeLevel: The student's grade level (9 to 12).
 ```
 
-### 6.3 Bidirectional relationships
-
-When two models declare complementary relationships, the parser recognizes them as a pair:
-
+**Also fine (the LLM handles variation):**
 ```markdown
-# In hero.md
-- A hero belongs to a → [[Location]].
-
-# In location.md
-- A location can have multiple → [[Hero]].
+- value: greater than 0
+- email: valid email format
+- age: at least 18
 ```
 
-The generated types reflect both directions (`hero.location: Location` and `location.heroes: Hero[]`).
+The LLM normalizes these into structured constraints.
 
-## 7. Wiki-Links
+### 2.4 Relationships
 
-`[[ModelName]]` creates a cross-reference to another model. Wiki-links can appear in:
-
-- **Property definitions** — typed references: `` `location`: → [[Location]] ``
-- **Relationship declarations** — target models: "has many → [[Item]]"
-- **Free-form prose** — the clarify system can detect undefined links
-
-Wiki-links are resolved against all declared model names. A link to an undefined model is a parse error.
-
-## 8. Spec-Defined Data
-
-Data blocks under `<!-- verbo:data -->` provide example values that are checked against model constraints.
-
-### 8.1 Syntax
+Describe relationships in a dedicated section or inline with properties:
 
 ```markdown
-<!-- verbo:data -->
+Relationships:
 
-## dataName
-- property: value
-- property: value
+- A student can enroll in multiple classes.
+- A class is taught by one teacher.
+- A class can have multiple students.
+- A teacher can teach multiple classes.
 ```
 
-### 8.2 Example
+The LLM extracts cardinality (`has-many`, `belongs-to`) and target models from the prose.
+
+### 2.5 Use a main.md
+
+A `main.md` file gives the LLM project-level context:
 
 ```markdown
-<!-- verbo:data -->
+# School Management System
 
-## defaultHero
-- name: "Aragorn"
-- level: 5
-- class: Warrior
-- health: 20
-- attack: 15
-- location: "Rivendell"
+This defines the data model for a school management system.
+It tracks students, teachers, and classes.
 ```
 
-### 8.3 Validation
+## 3. Progressive refinement
 
-The constraint assertion generator produces checks that every data value satisfies its model's constraints. If `defaultHero.level = 5` but the Hero model declares `level: number [10..]`, the assertion fails.
+The `.md` file you write IS the output. There's no separate artifact. The interview edits your file in place — each answer makes the prose more explicit.
 
-## 9. Complete Example
+### 3.1 How a file evolves
 
-### models/hero.md
+You start with:
 
 ```markdown
-<!-- verbo:model -->
-
-# Hero
-
-Heroes are the playable characters in the RPG Guild Simulator.
-
-## Properties
-- `name`: string (required)
-- `level`: number [1..100]
-- `class`: [Warrior, Mage, Rogue, Cleric]
-- `experience`: number (>=0)
-- `health`: number [10..]
-- `attack`: number (>0)
-- `location`: → [[Location]]
-
-## Relationships
-- A hero can have multiple → [[Item]].
-- A hero belongs to a → [[Location]].
+# Student
+- grade level: 9 to 12
+- email: must be valid
+- can take multiple classes
 ```
 
-### models/item.md
+The interview asks about "must be valid" and writes the answer directly into the file:
 
 ```markdown
-<!-- verbo:model -->
+# Student
+- grade level: 9 to 12
+- email: must be a valid email address (e.g., student@school.edu).
+- can take multiple classes
+```
 
-# Item
+No syntax was added. The prose just got more explicit — now the LLM can extract `string, email format`. After a few rounds, the same file that a human reads is precise enough for Claude Code, Cursor, or any AI coding tool to consume.
 
-## Properties
-- `name`: string (required)
-- `value`: number (>0)
+### 3.2 How Verbo produces this
+
+### 3.3 Extraction
+
+One LLM call reads all your `.md` files and extracts:
+- Model names and their source locations
+- Properties with names, types, and constraints
+- Relationships with cardinality and target models
+- Cross-file references
+
+The extraction prompt includes few-shot examples from the classroom and todo fixtures.
+
+### 3.4 Type generation
+
+The extracted structure is compiled into `types.verbo.ts`:
+
+```typescript
+export type Student = {
+  name: string;
+  email: string;
+  gradeLevel: number;
+  enrollmentDate: Date;
+  classes: Class[];
+};
+
+export type Class = {
+  name: string;
+  subject: string;
+  room: string;
+  maxStudents: number;
+  teacher: Teacher;
+  students: Student[];
+};
+```
+
+### 3.5 Validation
+
+`deno check types.verbo.ts` validates the type graph. If it fails, the errors are fed back to the LLM in a repair loop:
+
+```
+Your extraction produced types that fail type-checking:
+- Cannot find name 'Teacher'. Did you forget to process models/teacher.md?
+Please re-extract and fix these errors.
+```
+
+The LLM retries up to 3 times.
+
+### 3.6 Constraint assertions
+
+Value-level constraints are generated as `.verbo/validate.ts`:
+
+```typescript
+// Constraint from models/student.md: "grade level: 9 to 12"
+function assert_Student_gradeLevel(value: number, source: string): void {
+  if (value < 9 || value > 12) {
+    throw new Error(`${source}: gradeLevel = ${value} violates constraint [9..12]`);
+  }
+}
+```
+
+### 3.7 Clarification
+
+An LLM clarify pass finds issues in your prose:
+- Vague terms ("efficiently", "proper validation")
+- Imprecise declarations ("product code: not empty" — string or number?)
+- Undefined references (describing a relationship to a model that doesn't exist)
+- Contradictions ("level: 1 to 100" and "starts at level 0")
+
+Results are written to `clarifications.json`.
+
+### 3.8 Interview
+
+The interview is an interactive collaborator, not just a bug-finder. For each issue, the LLM **proposes a more precise version** of your spec:
+
+```
+❓ "product code: not empty" is ambiguous — should this be a string or number?
+
+Proposed: `- product code: a unique string identifier (cannot be empty).`
+1) Accept this proposal
+2) It's a number, not a string
+3) Custom definition
+```
+
+You can accept the proposal, choose an alternative, or write your own definition. All accepted changes are written back into your `.md` files with an audit trail under `.verbo/clarifications/`. The LLM acts as an editor — it helps you sharpen your prose, but you stay in control.
+
+## 4. Complete example
+
+### models/student.md
+
+```markdown
+# Student
+
+Students are enrolled in the school and can take multiple classes.
+
+Properties:
+
+- name: The full name of the student.
+- email: The student's school email address (must be valid).
+- gradeLevel: The student's grade level (9 to 12).
+- enrollmentDate: The date the student enrolled.
+
+Relationships:
+
+- A student can enroll in multiple classes.
+```
+
+### models/class.md
+
+```markdown
+# Class
+
+Classes are taught by a teacher and attended by students.
+
+Properties:
+
+- name: The name of the class.
+- subject: The subject of the class.
+- room: The room number where the class meets.
+- maxStudents: The maximum number of students (1 to 30).
+
+Relationships:
+
+- A class is taught by one teacher.
+- A class can have multiple students.
 ```
 
 ### main.md
 
 ```markdown
-# RPG Guild Simulator
+# School Management System
 
-This defines the data model for the RPG Guild Simulator.
-The game tracks heroes, monsters, locations, and items.
+This defines the data model for a school management system.
+It tracks students, teachers, and classes.
 ```
 
-## 10. Best Practices
+That's it. No syntax, no annotations — just the way you'd describe your models to a teammate.
 
-- **One model per file:** Each `<!-- verbo:model -->` file defines one data model. This keeps specs organized and parseable.
-- **Use a `main.md`:** Provide a free-form `main.md` as the project entry point. The clarify system uses it for context.
-- **Be explicit about constraints:** Instead of "it has a name," write `` `name`: string (required) ``. The parser can't infer constraints from prose.
-- **Use wiki-links for all cross-references:** Every reference to another model should use `[[ModelName]]`. This makes relationships machine-checkable.
-- **Define data to validate constraints:** Use `<!-- verbo:data -->` blocks to provide examples. The assertion generator will catch constraint violations.
-- **Run `clarify` before finalizing:** The AI catch what the parser can't — vague terms, contradictions, missing edge cases.
-- **Iterate:** Start with simple specs, run `verbo check`, review the output, refine. The interview system writes answers back for a reason.
+That's it. No syntax, no annotations — just the way you'd describe your models to a teammate.
+
+## 5. Best practices
+
+- **One model per file.** Helps the LLM know where each model begins and ends.
+- **Be explicit about constraints.** "9 to 12" is better than "a high school student." "Must be positive" is better than "a valid value."
+- **Name relationships explicitly.** "A student can enroll in multiple classes" names both the relationship and the target model.
+- **Use a main.md.** Gives the LLM project-level context and improves extraction quality.
+- **Run clarify before finalizing.** The AI catches what you might miss — contradictions, missing models, vague terms.
+- **Iterate.** Write a first draft, run `verbo check`, review the generated types, refine your prose, repeat. The interview system is there for the hard questions.

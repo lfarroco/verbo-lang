@@ -5,22 +5,21 @@
 ## Locked direction
 
 - **Specification engineering, not code generation.** Verbo validates specifications; it does not generate application code.
-- **Flavored Markdown is the source of truth.** Lightweight conventions (`<!-- verbo:model -->`, `[[WikiLinks]]`, constraint annotations) on standard `.md`.
-- **Deterministic parser** extracts structure from flavored `.md` — zero LLM, zero hallucination.
-- **TypeScript types as validation output.** `types.verbo.ts` checked by `deno check`. No custom manifest or validator.
+- **Natural language as input.** Plain `.md` files — no syntax, no annotations. The LLM extracts structure from prose.
+- **LLM as extractor with repair loop.** Extraction failures (deno check errors) are fed back for retry.
+- **TypeScript types as validation output.** `types.verbo.ts` checked by `deno check`.
 - **Constraint assertions** for value-level checks that TypeScript can't express.
-- **Interactive clarify/interview** that writes answers back into the spec files, with an audit trail.
-- **Implementation: Deno + TypeScript, functional style, no fp-ts/Effect.**
-- **Keep the content, replace the glue** (prompts, fixtures, docs carry over; compilers, manifests, scaffolds are dropped).
+- **Interactive clarify/interview** that writes answers back into spec files, with an audit trail.
+- **Implementation: Deno + TypeScript, functional style.**
 
 ## Phases (from DESIGN.md §14)
 
 | Phase | Scope | Gate |
 |---|---|---|
-| 0 | Clean up: remove codegen code (`src/compiler/*`, `src/manifest/*`, `scaffold.ts`, `templates/`); keep providers, prompts, fixtures | `deno check` green, tests pass |
-| 1 | Deterministic parser for flavored `.md` (directives, properties, constraints, wiki-links, relationships) | Parser tests green on guild + todo fixtures (no LLM) |
-| 2 | Type generator (`types.verbo.ts`) + `deno check` integration | Generated types pass `deno check` on guild + todo fixtures |
-| 3 | Constraint assertion generator (`.verbo/validate.ts`) + data validation | Assertions catch deliberate constraint violations in fixtures |
+| 0 | Clean up: remove codegen code; keep providers, prompts, fixtures | ✓ Done |
+| 1 | Extraction prompt + repair loop: LLM extracts structure from natural language; deno check failures feed back for retry | Extraction produces valid types for classroom fixture |
+| 2 | Type generator: produce `types.verbo.ts` from extracted structure | Generated types pass `deno check` on fixture specs |
+| 3 | Constraint assertion generator: produce `.verbo/validate.ts` | Assertions catch deliberate violations in fixtures |
 | 4 | Interactive clarify/interview with write-back + audit trail | Interview writes answers, re-clarify converges |
 | 5 | CLI polish: `verbo check` and `verbo interview` commands; test suite; CI | All green |
 
@@ -30,4 +29,3 @@
 - Web shell (browse specs, model graph, edit in-browser).
 - LLM-facing API / MCP server.
 - Interview spec-authoring agent.
-- Per-model caching.
