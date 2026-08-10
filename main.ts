@@ -5,20 +5,11 @@ import { openai } from "./src/api/openai.ts";
 import { anthropic } from "./src/api/anthropic.ts";
 import { ollama } from "./src/api/ollama.ts";
 
-import compileSql from "./src/compiler/sql.ts";
-import compileModel from "./src/compiler/models.ts";
-import compileDbClient from "./src/compiler/db-client.ts";
-import compileRoutes from "./src/compiler/routes.ts";
-import compileClass from "./src/compiler/compile-class.ts";
-import compileFunction from "./src/compiler/compile-function.ts";
-import compileReact from "./src/compiler/compile-react.ts";
-import testGenerator from "./src/testGenerator.ts";
-
 import { createDirIfNotExists, getEnv } from "./src/utils.ts";
-import { scaffoldRestServer } from "./scaffold.ts";
+import clarify from "./src/commands/clarify.ts";
 
 // --- Constants ---
-const VERSION = "0.0.1";
+const VERSION = "0.1.0";
 
 const DEFAULT_MODELS: Record<string, string> = {
   gemini: "gemini-1.5-flash-latest",
@@ -28,38 +19,33 @@ const DEFAULT_MODELS: Record<string, string> = {
 };
 
 const VALID_PROVIDERS = ["gemini", "openai", "ollama", "anthropic"];
-const VALID_TARGETS = ["sql", "model", "db-client", "routes", "class", "function", "react", "rest-server"];
 
 type AiProviderType = "gemini" | "openai" | "ollama" | "anthropic";
-type TargetType = typeof VALID_TARGETS[number];
 type AiProviderFn = (prompt: string) => Promise<string>;
-
-interface CompilationContext {
-  sourceDir: string;
-  outputPath: string;
-  verboDir: string;
-  aiProvider: AiProviderFn;
-  target: TargetType;
-  verbose: boolean;
-  generateTests: boolean;
-}
 
 // --- Helper Functions ---
 
 function printHelp(): void {
   console.log(`Verbo v${VERSION}`);
-  console.log("Usage: verbo [OPTIONS...]");
-  console.log("\nOptional flags:");
+  console.log("");
+  console.log("A specification engineering tool. Write data models in flavored Markdown,");
+  console.log("validate them deterministically, and resolve ambiguities through AI-assisted interviews.");
+  console.log("");
+  console.log("Usage: verbo <command> [OPTIONS...]");
+  console.log("");
+  console.log("Commands:");
+  console.log("  check      Parse specs and validate (stub — coming in Phase 1-3)");
+  console.log("  clarify    Analyze specs for ambiguities using AI");
+  console.log("  interview  Resolve ambiguities interactively (stub — coming in Phase 4)");
+  console.log("");
+  console.log("Options:");
   console.log("  -h, --help              Display this help and exit");
   console.log("  -V, --version           Output version information and exit");
-  console.log("  -g, --generate-tests    Generate tests for the output code");
   console.log("  -v, --verbose           Enable verbose output");
   console.log("  -d, --dir <path>        Source directory for Verbo files. Default: ./");
-  console.log("  -o, --output <path>     Output directory for generated files. Default: dist/");
   console.log("  -e, --envfile <path>    Path to .env file. Default: .env");
   console.log(`  -a, --aiprovider <name> AI provider (${VALID_PROVIDERS.join(", ")}). Default: ollama`);
   console.log("  -m, --model <name>      AI model to use. See provider for defaults.");
-  console.log(`  -t, --target <type>     Compilation target (${VALID_TARGETS.join(", ")}). Default: function`);
 }
 
 function getProvider(
@@ -83,77 +69,49 @@ function getProvider(
   }
 }
 
-// --- Orchestration Functions ---
+// --- Command Handlers ---
 
-async function runRestServerCompilation(context: CompilationContext): Promise<void> {
-  console.log("Generating complete REST server...");
-  const { sourceDir, verboDir, outputPath, aiProvider } = context;
-  const compileOptions = { workingDir: sourceDir, verboDir, aiProvider };
-
-  await compileSql(compileOptions);
-  await compileModel(compileOptions);
-  await compileDbClient(compileOptions);
-  await compileRoutes(compileOptions);
-  await scaffoldRestServer({ verboDir, outputPath });
+async function runCheck(sourceDir: string): Promise<void> {
+  createDirIfNotExists(`${sourceDir}/.verbo`);
+  console.log("🔍 Running spec check...");
+  console.log("");
+  console.log("  (Phase 1) Deterministic parser    — not yet implemented");
+  console.log("  (Phase 2) Type generation + deno check — not yet implemented");
+  console.log("  (Phase 3) Constraint assertions   — not yet implemented");
+  console.log("");
+  console.log("💡 Run `verbo clarify` to analyze specs for ambiguities.");
 }
 
-async function runSingleCompilation(context: CompilationContext): Promise<void> {
-  const { target, sourceDir, outputPath, verboDir, aiProvider, generateTests } = context;
-  const compileOptions = { workingDir: sourceDir, verboDir, aiProvider };
-
-  switch (target) {
-    case "sql":
-      await compileSql(compileOptions);
-      break;
-    case "model":
-      await compileModel(compileOptions);
-      break;
-    case "db-client":
-      await compileDbClient(compileOptions);
-      break;
-    case "routes":
-      await compileRoutes(compileOptions);
-      break;
-    case "class":
-      await compileClass({ sourceDir, outputPath, aiProvider });
-      break;
-    case "function":
-      await compileFunction({ sourceDir, outputPath, aiProvider });
-      break;
-    case "react":
-      await compileReact({ sourceDir, outputPath, aiProvider });
-      break;
-  }
-
-  if (generateTests) {
-    if (["class", "function", "react"].includes(target)) {
-      console.log("Generating tests...");
-      const targetFile = `${outputPath}/${target === "react" ? "index.tsx" : "index.ts"}`;
-      await testGenerator({ sourceDir, outputPath, targetFile, aiProvider });
-    } else {
-      console.warn(`Test generation is not supported for target "${target}".`);
-    }
-  }
+async function runInterview(sourceDir: string, _aiProvider: AiProviderFn): Promise<void> {
+  createDirIfNotExists(`${sourceDir}/.verbo/clarifications`);
+  console.log("💬 Interactive interview mode");
+  console.log("");
+  console.log("  (Phase 4) Not yet implemented.");
+  console.log("  Will walk through severity-ordered questions and write answers back to .md files.");
+  console.log("");
+  console.log("💡 Run `verbo clarify` for passive ambiguity analysis.");
 }
 
 // --- Main Execution ---
 
 export async function main(args: string[] = Deno.args): Promise<void> {
-  const options = parseArgs(args, {
+  // Treat the first positional argument as the command
+  const command = args[0] && !args[0].startsWith("-") ? args[0] : "help";
+  const rest = args[0] && !args[0].startsWith("-") ? args.slice(1) : args;
+
+  const options = parseArgs(rest, {
     alias: {
-      "help": "h", "version": "V", "generate-tests": "g", "verbose": "v",
-      "dir": "d", "output": "o", "envfile": "e", "aiprovider": "a",
-      "model": "m", "target": "t",
+      "help": "h", "version": "V", "verbose": "v",
+      "dir": "d", "envfile": "e", "aiprovider": "a", "model": "m",
     },
-    boolean: ["help", "generate-tests", "verbose", "version"],
-    string: ["dir", "output", "envfile", "aiprovider", "model", "target"],
+    boolean: ["help", "verbose", "version"],
+    string: ["dir", "envfile", "aiprovider", "model"],
     default: {
-      dir: "./", output: "dist/", envfile: ".env",
-      aiprovider: "ollama", target: "function",
+      dir: "./", envfile: ".env", aiprovider: "ollama",
     },
   });
 
-  if (options.help) {
+  if (options.help || command === "help") {
     printHelp();
     return;
   }
@@ -165,53 +123,42 @@ export async function main(args: string[] = Deno.args): Promise<void> {
 
   const verbose = options.verbose;
   if (verbose) {
-    console.log("CLI Options:", options);
+    console.log("Command:", command);
+    console.log("Options:", options);
   }
 
-  // --- Configuration & Validation ---
+  // --- Configuration ---
   const aiProviderName = options.aiprovider as AiProviderType;
-  const target = options.target as TargetType;
 
-  // deno-lint-ignore no-explicit-any
   if (!VALID_PROVIDERS.includes(aiProviderName)) {
     console.error(`Error: Invalid AI provider "${aiProviderName}". Valid options are: ${VALID_PROVIDERS.join(", ")}`);
     return;
   }
 
-  if (!VALID_TARGETS.includes(target)) {
-    console.error(`Error: Invalid target "${target}". Valid options are: ${VALID_TARGETS.join(", ")}`);
-    return;
-  }
-
-  const model = options.model || DEFAULT_MODELS[aiProviderName as keyof typeof DEFAULT_MODELS];
+  const model = options.model || DEFAULT_MODELS[aiProviderName];
   const dotEnvFilePath = `${Deno.cwd()}/${options.envfile}`;
-  const verboDir = `${options.dir}/.verbo`;
+  const aiProvider = getProvider(aiProviderName, model, dotEnvFilePath);
+  const sourceDir = options.dir;
 
-  console.log(`Starting compilation for target "${target}"...`);
-
-  createDirIfNotExists(verboDir);
-
-  const context: CompilationContext = {
-    sourceDir: options.dir,
-    outputPath: options.output,
-    verboDir,
-    aiProvider: getProvider(aiProviderName, model, dotEnvFilePath),
-    target,
-    verbose,
-    generateTests: options["generate-tests"],
-  };
-
-  // --- Compilation Dispatch ---
+  // --- Command Dispatch ---
   try {
-    if (context.target === "rest-server") {
-      await runRestServerCompilation(context);
-    } else {
-      await runSingleCompilation(context);
+    switch (command) {
+      case "check":
+        await runCheck(sourceDir);
+        break;
+      case "clarify":
+        await clarify({ sourceDir, aiProvider });
+        break;
+      case "interview":
+        await runInterview(sourceDir, aiProvider);
+        break;
+      default:
+        console.error(`Error: Unknown command "${command}".`);
+        console.error("Available commands: check, clarify, interview");
+        console.error("Run `verbo help` for usage information.");
     }
-
-    console.log("Compilation finished successfully.");
   } catch (error) {
-    console.error("An error occurred during compilation:", error instanceof Error ? error.message : String(error));
+    console.error("An error occurred:", error instanceof Error ? error.message : String(error));
     if (verbose) {
       console.error(error);
     }

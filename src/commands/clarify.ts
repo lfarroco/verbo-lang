@@ -1,8 +1,8 @@
 import {
 	aggregateFilesForPrompt,
 	createDirIfNotExists,
+	runAiGeneration,
 } from "../utils.ts";
-import { runAiGeneration } from "../compiler/generator.ts";
 
 /**
  * Analyzes project specifications to find ambiguities and generates a JSON file with questions.
@@ -26,7 +26,7 @@ export default async function clarify({
 
 	await runAiGeneration({
 		aiProvider,
-		promptTemplatePath: "src/prompts/clarify.md",
+		promptTemplatePath: "prompts/clarify.md",
 		promptData: projectFiles,
 		outputPath: ".", // Output file will be in the project root
 		outputFile: outputFile,
