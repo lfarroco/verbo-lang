@@ -45,6 +45,7 @@ Primary descriptor for external communication: *"structured vibe-coding"* / *"sp
 6. **Implementation: Deno + TypeScript, functional style, no fp-ts/Effect.** Pure functions, explicit data flow, typed errors via plain TS.
 7. **Keep the content, replace the glue.** Prompts, fixtures, templates, and design docs carry over; the orchestration code is rewritten (see §10).
 8. **`verbo.json` per project** declares skills, provider, model, and output dir.
+9. **The core is a library, not a CLI.** The pipeline is exposed as a library-style function — `compile({ specs, skill, provider }) → { manifest, artifacts, logs, questions? }`, JSON in/out, no `console.log`/file-write coupling — so the CLI, the future web shell, and a future LLM-facing API are all thin shells around the same core (see §11, idea C).
 
 ## 4. Architecture overview
 
@@ -210,6 +211,7 @@ The `ls` example is the canonical demonstration that the core is general: no dat
 - **Web shell (idea B):** browse specs, view the connection graph (the manifest *is* the graph), deploy. The manifest makes this a rendering problem.
 - **Additional skills:** platform-game (different difficulty class — scaffolds can provide loop/canvas/input/physics, but game "feel" is not prose-compilable; demo-only), dashboards.
 - **Per-model slicing/caching** (smaller generation units, hash-based cache). Natural follow-up after the skill system exists.
+- **LLM-facing interface (idea C):** expose the compiler so *other LLMs* can build systems from Verbo specs with minimal token use — the spec is the compressed representation, the pipeline is the decompressor. Two-phase clarify protocol across the API: `POST /compile` returns `{ status: "needs_clarification", questions }`, the calling model answers, re-submit. Exposure via an MCP server (any MCP-capable agent can call `verbo_compile`) alongside a plain HTTP API — both thin shells over the §3.9 `compile()` core. Tokens are shifted, not eliminated (caller saves; the service spends). Makes pinned models + per-spec caching higher priority. Deferred until the core and web shell exist.
 
 ## 12. Implementation phases
 
