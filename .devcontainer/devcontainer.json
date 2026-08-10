@@ -1,0 +1,21 @@
+{
+  "name": "verbo-dev",
+  "build": {
+    "dockerfile": "../Dockerfile.dev",
+    "context": ".."
+  },
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "mounts": [
+    { "source": "verbo_deno_cache", "target": "/root/.cache/deno", "type": "volume" }
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": ["denoland.vscode-deno"],
+      "settings": {
+        "deno.enable": true,
+        "deno.lint": true
+      }
+    }
+  }
+}

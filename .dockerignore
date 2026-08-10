@@ -1,0 +1,6 @@
+.git
+.verbo
+node_modules
+dist
+.env
+*.log

@@ -1,0 +1,61 @@
+# Docker-based development environment for verbo-lang.
+#
+# Everything needed to work on Verbo runs in containers, so nothing (Deno,
+# Postgres, Ollama) is installed on the host.
+#
+#   dev      — the workspace container where all `deno` commands run (tests,
+#              checks, compiles). The repo is bind-mounted at /workspace.
+#   ollama   — optional local AI provider (the tool's default provider).
+#   db       — optional Postgres for smoke-testing generated web-apps.
+#
+# Quick start:
+#   docker compose build dev
+#   ./dev --version            # or: docker compose run --rm dev deno --version
+#   ./dev test
+#   ./dev ollama start         # optional local AI
+#   ./dev db start             # optional postgres
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: verbo-dev
+    working_dir: /workspace
+    environment:
+      # Cloud AI provider keys (substituted from .env if present).
+      GEMINI_KEY: ${GEMINI_KEY:-}
+      OPENAI_KEY: ${OPENAI_KEY:-}
+      ANTHROPIC_KEY: ${ANTHROPIC_KEY:-}
+      # Local AI — defaults to the ollama service on this compose network.
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+    volumes:
+      - .:/workspace
+      - deno_cache:/root/.cache/deno
+    ports:
+      - "8000:8000"   # for smoke-testing a generated server
+    command: ["deno", "--version"]
+    stdin_open: true
+    tty: true
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "11434:11434"
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: verbo
+    ports:
+      - "55400:5432"   # matches the historical run-db target / .env.example
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  deno_cache:
+  ollama_models:
+  db_data:

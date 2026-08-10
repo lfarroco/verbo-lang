@@ -211,7 +211,7 @@ export async function main(args: string[] = Deno.args): Promise<void> {
 
     console.log("Compilation finished successfully.");
   } catch (error) {
-    console.error("An error occurred during compilation:", error.message);
+    console.error("An error occurred during compilation:", error instanceof Error ? error.message : String(error));
     if (verbose) {
       console.error(error);
     }

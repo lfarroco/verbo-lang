@@ -1,7 +1,11 @@
 
 export const ollama = (model: string) => async (prompt: string): Promise<string> => {
 
-	const response = await fetch("http://localhost:11434/api/generate", {
+	// The Ollama base URL is configurable so the tool works from inside a
+	// container (e.g. the `ollama` service in docker-compose.yml).
+	const baseUrl = (Deno.env.get("OLLAMA_URL") ?? "http://localhost:11434").replace(/\/+$/, "");
+
+	const response = await fetch(`${baseUrl}/api/generate`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",

@@ -57,4 +57,54 @@ scaffold:
 	cp test/guild/results/routes.ts app/src/routes.ts
 	cp test/guild/results/models.ts app/src/models.ts
 
+# --- Docker-based development (recommended; no host tooling required) ---
+# All commands run inside the `dev` service container (see docker-compose.yml).
+DEV := docker compose run --rm dev
+
+dev-build:
+	docker compose build dev
+
+dev-up:
+	docker compose up -d dev
+
+dev-down:
+	docker compose down
+
+dev-shell:
+	docker compose run --rm dev bash
+
+dev-test:
+	$(DEV) deno test
+
+dev-check:
+	$(DEV) deno check main.ts
+
+dev-fmt:
+	$(DEV) deno fmt
+
+dev-fmt-check:
+	$(DEV) deno fmt --check
+
+dev-lint:
+	$(DEV) deno lint
+
+dev-help:
+	$(DEV) deno run -A main.ts --help
+
+ollama-start:
+	docker compose up -d ollama
+
+ollama-stop:
+	docker compose stop ollama
+
+ollama-pull:
+	docker compose exec ollama ollama pull codegemma
+
+db-start:
+	docker compose up -d db
+
+db-stop:
+	docker compose stop db
+
+
 

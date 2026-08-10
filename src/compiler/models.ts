@@ -11,7 +11,7 @@ export default async function compile({
 	verboDir: string;
 	aiProvider: (prompt: string) => Promise<string>;
 }) {
-	const files = listFilesAt(workingDir + '/models');
+	const files = listFilesAt(workingDir + '/models', ["md"]);
 	const schemaFile = readFile(verboDir + '/init.sql');
 	const compiledFiles = compileFiles(files, workingDir);
 

@@ -2,6 +2,8 @@
 
 An experiment on generating a web API using natural language. Basically "structured vibe-coding".
 
+> **Status (2026 redesign):** Verbo is being rebuilt as a **general core + composable skills** system (first-class skills: `web-app` and `cli`). Markdown specs are the source of truth; a validated *manifest* is extracted from them and compiled through a verified, retry-loop pipeline; ambiguity is treated as a compile error resolved via an interactive `interview` that writes answers back into the specs. **The authoritative design reference is [`docs/DESIGN.md`](./docs/DESIGN.md).** The demo below remains the canonical `web-app` example.
+
 ## Table of Contents
 
 - [Demo](#demo)
@@ -166,10 +168,35 @@ Before compiling, you can ask the AI to analyze your project for ambiguities. Th
 
 ```bash
 # Analyze the project and generate a list of questions
-deno run -A cli.ts clarify
+deno run -A main.ts clarify
 ```
 
 This will create a `clarifications.json` file containing a list of potential issues and questions identified by the AI, allowing you to refine your specifications before generating code.
+
+## Development (Docker)
+
+The recommended way to develop Verbo is inside Docker, so nothing (Deno, Postgres, Ollama) is installed on your host. See `docker-compose.yml` for the full setup.
+
+```bash
+# one-time: build the dev image and copy the env example
+docker compose build dev
+cp .env.example .env
+
+# run deno in the dev container (no host install needed)
+./dev --version
+./dev test
+./dev check main.ts
+./dev fmt --check
+
+# open a shell in the container
+./dev shell
+
+# optional companion services (also fully containerized)
+./dev ollama start && ./dev ollama pull codegemma   # local AI provider
+./dev db start                                      # postgres for generated apps
+```
+
+Everything is bind-mounted, so your edits on the host are live inside the container. The `dev` service exposes port `8000` for smoke-testing generated servers (use `docker compose run --rm --service-ports dev deno run -A ...`). A VS Code dev container is available at `.devcontainer/` (install the Dev Containers extension, then "Reopen in Container"). Make targets mirroring these commands are in the `Makefile` (`make dev-test`, `make dev-check`, …).
 
 ## Syntax
 

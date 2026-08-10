@@ -1,80 +1,85 @@
 # Verbo-Lang AI Project Context
 
-This document provides a high-level overview of the `verbo-lang` project, intended for AI assistants to quickly understand its purpose, architecture, and goals.
+This document provides a high-level overview of the `verbo-lang` project, intended for AI assistants to quickly understand its purpose, architecture, and goals. **The authoritative design reference is [`docs/DESIGN.md`](./docs/DESIGN.md) — read it first. Where this file and DESIGN.md conflict, DESIGN.md wins.**
 
 ## 1. Core Mission
 
-**Verbo-lang is an experimental programming language where natural language specifications are compiled into functional source code by a Large Language Model (LLM).**
+**Verbo is a spec-driven code generation system: structured Markdown specifications compiled into working code by a guided AI pipeline.**
 
-The primary goal is to explore "structured vibe-coding": using descriptive text in a guided, structured way to generate complex applications. The current focus is on generating RESTful web APIs.
+The project explores "structured vibe-coding" — using descriptive, structured natural language to generate complex applications reliably. It is *not* (yet) a "language" in the strict sense: output is non-deterministic and the spec has conventions rather than a grammar. "Language" is the long-term north star (see DESIGN.md §2). The current focus is a general core + composable skills system, with two first-class skills: **`web-app`** (REST APIs) and **`cli`**.
 
 ## 2. Key Concepts
 
-- **Natural Language as Spec:** The source code for Verbo is a set of Markdown (`.md`) files containing descriptions of models, API routes, and overall logic.
-- **AI-Driven Compilation:** There is no traditional compiler. Instead, a tool orchestrates a series of prompts to an LLM (like Gemini, GPT, or a local Ollama model) to translate the specifications into a target language.
-- **Guided Generation:** The process is not a single "do everything" prompt. It's a pipeline of steps, where each step uses targeted prompts and few-shot examples to guide the AI in generating a specific piece of the application (e.g., database schema, then models, then API handlers).
-- **Modular Prompt Templates:** The compiler uses dedicated, high-quality prompt templates stored in `.prompt.md` files. These templates are highly specific, include best practices, and use few-shot examples to ensure the LLM produces consistent, robust code.
-- **Proactive Ambiguity Resolution:** Before compilation, an AI-powered `clarify` command analyzes the specifications for vague terms, contradictions, or incomplete logic. This generates a list of questions for the developer, ensuring a more robust final output.
+- **Markdown as the Source of Truth:** The specs are Markdown (`.md`) files — `main.md`, `models/*.md`, `routes.md` (web-app) or `ports.md` (cli). Markdown stays loose and natural; structure lives in the derived manifest, not the prose.
+- **The Manifest (IR):** One LLM call extracts the markdown corpus into a validated JSON *manifest* (types, functions, ports, behavior rules) with source maps back to file+line. The manifest is disposable and re-extracted before every compile.
+- **AI-Driven Compilation:** There is no traditional compiler. A pipeline orchestrates prompts to an LLM (Ollama local, Gemini, GPT, Claude) to translate the manifest into target code.
+- **Structured Pipeline:** Generation is a sequence of small steps (sql → models → db-client → routes for web-app), each with targeted prompt templates and few-shot examples, and each **verified** (`deno check`, SQL parse, route coverage) with a bounded retry loop that feeds errors back to the model.
+- **Ambiguity as Compile Error:** An AI-powered `clarify` pass identifies vagueness/contradictions; an interactive `interview` walks the developer through severity-ordered questions and **writes the answers back into the spec files**, with an audit trail under `.verbo/clarifications/`.
+- **Skills:** Composable codegen backends (skill.json + prompts + scaffold + fixtures). The pure-function/ports contract is the shared invariant: the LLM generates pure logic; the scaffold wires ports to the real world.
 
 ## 3. Project Structure
 
-A typical `verbo-lang` project has the following file structure:
+**Tool repo layout (current, partially planned):**
 
-- **Source Specifications:**
-  - `main.md`: The entry point, containing a high-level description of the application's purpose.
-  - `models/`: A directory with `.md` files for each data model.
-  - `routes.md`: Defines API endpoints and their functionality.
-- **Tooling & Configuration:**
-  - `main.ts`: The main Deno CLI entrypoint for commands like `clarify` and `compile`.
-  - `src/prompts/`: A directory containing the modular `.prompt.md` files used by the compiler.
-  - `.env`: Stores API keys for LLM providers.
-  - `Makefile`: Contains helper scripts for running commands.
-- **Documentation:**
-  - `docs/`: Contains feature specifications and design documents (e.g., `feature_clarification_mode.md`).
-- **Generated Artifacts:**
-  - `.verbo/`: A directory for intermediate artifacts, logs, and cached files.
-  - `clarifications.json`: An optional file generated by the `clarify` command, listing ambiguities.
+- `main.ts`: Deno CLI entrypoint (commands: `compile`, `clarify`, `interview`, …).
+- `src/api/`: Thin provider adapters (Ollama, Gemini, OpenAI, Anthropic).
+- `src/prompts/`: Modular prompt templates (`.md`), to be moved into per-skill `prompts/` dirs during the redesign.
+- `skills/` *(planned)*: Composable codegen backends — `web-app/` and `cli/`, each with `skill.json`, `prompts/`, `scaffold/`, `fixtures/`.
+- `templates/`: Server scaffold templates (server.ts, docker-compose, dotenv).
+- `docs/`: `DESIGN.md` (authoritative), plus historical specs (`feature_clarification_mode.md`, `scaffolding_interview.md`).
+- `test/`: Fixture projects — `guild/` and `todo/` (specs + generated results as golden data).
+
+**A typical verbo project (source specs):**
+
+- `main.md`: entry point, high-level description.
+- `models/`: one `.md` per data model (web-app).
+- `routes.md`: API endpoints (web-app).
+- `ports.md`: declared external interactions (cli).
+- `verbo.json` *(planned)*: declares skills, provider, model, output dir.
+
+**Generated artifacts:**
+
+- `.verbo/`: intermediate artifacts, prompt/response logs, `.verbo/clarifications/` audit trail.
+- `clarifications.json`: optional file from the `clarify` command.
 
 ## 4. Workflow
 
-The end-to-end process looks like this:
+The end-to-end process (planned core; the manifest pipeline replaces the older single-shot steps):
 
 1.  **Specification:** A developer writes the application logic in `.md` files as described above.
-2.  **Clarification (Optional but Recommended):** The developer runs `deno run -A cli.ts clarify`. The tool prompts the LLM to analyze all specs for ambiguities. The output is a `clarifications.json` file with a list of questions. The developer uses this feedback to improve the `.md` files.
-3.  **Compilation:** The developer runs a command like `make compile` or `deno run -A cli.ts compile ...`.
-4.  **Orchestration:** The Verbo tool reads the refined `.md` files.
-5.  **AI Generation (Pipeline):**
-    a. **Schema Generation:** The tool prompts the LLM to convert model descriptions from `models/*.md` into a SQL database schema.
-    b. **Model & DB Client Generation:** It then prompts the LLM to generate TypeScript/Deno model files and corresponding database client code (e.g., CRUD functions) for each model.
-    c. **API Handler & Router Generation:** Using the `routes.md` spec and the generated models/clients, the LLM generates the API request handlers and a router file to wire them together.
-    d. **Server Scaffolding:** A high-quality server entry point (`main.ts`) is generated from a dedicated template. This includes modern Deno APIs, middleware for logging and error handling, and graceful shutdown logic.
-6.  **Output:** The complete, runnable Deno application source code (SQL, TypeScript, etc.) is saved to a results directory.
+2.  **Extract:** One LLM call parses the markdown corpus into a validated **manifest** (types, functions, ports, behavior rules) with source maps.
+3.  **Lint (deterministic):** Required files, unique names, resolvable references, no duplicate/ambiguous routes. `CRITICAL` issues block compilation.
+4.  **Clarify / Interview:** Passive `clarify` (→ `clarifications.json`) and interactive `interview` (severity-ordered Q&A that **writes answers back into the `.md` files**, audited under `.verbo/clarifications/`). Re-extract and re-clarify until clean.
+5.  **Compile (skill pipeline):** Each step consumes the manifest and generates an artifact (e.g., sql → models → db-client → routes for `web-app`; pure-function core for `cli`).
+6.  **Verify + retry:** Each generated artifact is checked (`deno check`, SQL parse, route coverage). Failures are fed back to the model with bounded retries (max 3). Prompts and raw responses are logged to `.verbo/`.
+7.  **Scaffold:** Skill scaffolds + generated artifacts are assembled into the output project (server/CLI entrypoint, docker-compose, dotenv as applicable).
+8.  **Output:** The complete, runnable Deno application source code (SQL, TypeScript, etc.) is saved to the output directory.
 
 ## 5. Technology Stack
 
-- **Specification Language:** Structured Natural Language (primarily English) in Markdown.
+- **Tool implementation:** Deno + TypeScript, functional style, no fp-ts/Effect (locked decision).
+- **Specification language:** Structured Natural Language (primarily English) in Markdown.
 - **AI Providers:**
     - Local: Ollama
     - Cloud: Google Gemini, OpenAI, Anthropic
-- **Generated Application Stack:**
+- **Generated application stack (web-app skill):**
     - Runtime: Deno
     - Language: TypeScript
-    - Database: PostgreSQL (inferred from "psql library" mention in `README.md`)
+    - Framework: Oak (HTTP), postgres (psql)
+    - Database: PostgreSQL
+- **Planned dependency for verification:** `pg-query-ng` (npm specifier) for SQL parsing.
 
 ## 6. Project Goals & Roadmap
 
-- **Current Status:** Experimental, with a proof-of-concept for generating a basic REST API. A `clarify` command for ambiguity detection is implemented.
-- **Roadmap:**
-    1.  **Interactive Specification Refinement:** Build an `interview` command that reads `clarifications.json` and interactively walks the developer through resolving ambiguities, automatically updating the spec files.
-    2.  **Extensibility ("Skills"):** Allow developers to add new "skills" to the language, such as the ability to make HTTP requests, perform file operations, or generate CLIs.
-    3.  **Test Generation:** Automatically generate unit and integration tests based on the specifications.
-    4.  **AI-Powered Refactoring:** Enable the LLM to analyze the generated code and suggest improvements or perform refactoring.
+- **Current Status:** Experimental proof-of-concept for REST API generation exists (see `test/guild/results/`), plus a basic `clarify` command. The project is being rebuilt around the design in `docs/DESIGN.md`: general core (extract → manifest → lint → clarify → compile → verify → scaffold) + composable skills.
+- **Roadmap:** See `docs/roadmap.md` and `docs/DESIGN.md` §12 for the phased plan (Phases 0–5). Deferred items: interview spec-authoring agent, web shell (browse/graph/deploy), additional skills, per-model caching.
 
 ## 7. How to Assist
 
 When asked to contribute to or use `verbo-lang`:
 
-- **To understand the syntax:** Refer to the examples in `README.md` and look for a `VERBO_SPEC.md` file for a more formal definition. The syntax is intentionally flexible.
-- **When generating Verbo specs (`.md` files):** Follow the structure and style of the examples. Be descriptive and clear about properties, relationships, and endpoint functionality. After writing specs, consider running the `clarify` command to check for issues before compiling.
-- **When working on the Verbo compiler/tool:** The main task is to improve the prompt engineering and the pipeline orchestration. This involves crafting better prompts, providing better few-shot examples, and potentially breaking down generation steps into smaller, more reliable sub-tasks.
-- **To improve code generation:** The best way to improve a generation step is to create or refine a dedicated prompt file in `src/prompts/`. Follow the existing `rest_server.prompt.md` as a template for quality and structure.
+- **Read the design first:** `docs/DESIGN.md` is the authoritative architecture reference. `docs/roadmap.md` summarizes the phases.
+- **To understand the spec format:** Refer to the fixture examples under `test/guild/` and `test/todo/` (web-app) and the planned `ls` fixture (cli). The syntax is intentionally flexible — markdown conventions, not a grammar.
+- **When generating Verbo specs (`.md` files):** Follow the structure and style of the fixtures. Be descriptive and clear about properties, relationships, routes, and behavior. Anchor to known conventions/tools ("follow REST conventions", "behaves like GNU ls") — it's the single most effective disambiguation technique. Consider running `clarify` before compiling.
+- **When working on the tool:** The priority is the redesign in `docs/DESIGN.md` — phases 0–5. The core is target-agnostic (manifest, linter, verify, clarify); skills are the pluggable backends. Do not extend the old hardcoded `src/compiler/*` targets.
+- **To improve code generation:** Refine the prompt files. In the planned layout these live under `skills/<skill>/prompts/`. Improve few-shot examples and verification checks; do **not** put code that a model may copy verbatim (a bug in a prompt example becomes a bug in the output).

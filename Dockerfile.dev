@@ -1,0 +1,18 @@
+# Verbo development image — Deno + basic tooling, nothing installed on the host.
+# The repo is bind-mounted at /workspace (see docker-compose.yml); this image only
+# provides the runtime and dev tools.
+FROM denoland/deno:2.9.5
+
+# Comfortable dev-shell tooling. The deno image is debian-slim based.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends bash git curl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+# Deno's module/package cache lives here; mounted as the named volume `deno_cache`
+# (see docker-compose.yml) so downloads are shared across runs.
+ENV DENO_DIR=/root/.cache/deno
+
+WORKDIR /workspace
+
+# No COPY: the working tree is bind-mounted by docker-compose, so host edits are live.
+CMD ["deno", "--version"]

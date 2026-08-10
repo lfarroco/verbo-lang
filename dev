@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Docker-based Verbo development wrapper.
+#
+# Usage:
+#   ./dev <deno args...>      run deno in the dev container (e.g. ./dev test)
+#   ./dev shell               open a bash shell in the dev container
+#   ./dev up [service]        start dev services (dev by default)
+#   ./dev down                stop all dev services
+#   ./dev logs [service]      tail service logs
+#   ./dev ps                  list service status
+#   ./dev ollama <cmd>        manage the local AI service (start|stop|logs|pull <model>)
+#   ./dev db <cmd>            manage postgres (start|stop|logs|psql)
+set -euo pipefail
+cd "$(dirname "$0")"
+
+cmd="${1:-}"
+shift || true
+
+case "$cmd" in
+  up)
+    docker compose up -d "${@:-dev}"
+    ;;
+  down)
+    docker compose down "$@"
+    ;;
+  ps)
+    docker compose ps
+    ;;
+  logs)
+    docker compose logs -f --tail=100 "$@"
+    ;;
+  shell)
+    docker compose run --rm dev bash "$@"
+    ;;
+  ollama)
+    sub="${1:-start}"
+    shift || true
+    case "$sub" in
+      start) docker compose up -d ollama ;;
+      stop)  docker compose stop ollama ;;
+      logs)  docker compose logs -f --tail=100 ollama ;;
+      pull)  docker compose exec ollama ollama pull "${1:-codegemma}" ;;
+      *)     docker compose exec ollama ollama "$sub" "$@" ;;
+    esac
+    ;;
+  db)
+    sub="${1:-start}"
+    shift || true
+    case "$sub" in
+      start) docker compose up -d db ;;
+      stop)  docker compose stop db ;;
+      logs)  docker compose logs -f --tail=100 db ;;
+      psql)  docker compose exec db psql -U postgres "$@" ;;
+      *)     docker compose exec db "$sub" "$@" ;;
+    esac
+    ;;
+  "" | -h | --help)
+    sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
+    ;;
+  *)
+    docker compose run --rm dev deno "$cmd" "$@"
+    ;;
+esac

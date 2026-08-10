@@ -1,7 +1,7 @@
-import { listAppFiles, readFile } from "../utils.ts";
+import { listFilesAt, readFile } from "../utils.ts";
 
 export function gatherFiles(sourceDir: string) {
-	const files = listAppFiles(sourceDir);
+	const files = listFilesAt(sourceDir, ["md"]);
 
 	let compiledFiles = "";
 
