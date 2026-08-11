@@ -23,13 +23,14 @@ Verbo does NOT generate application code. It validates specifications. The outpu
 **Tool repo layout:**
 
 - `main.ts`: Deno CLI entrypoint (commands: `check`, `clarify`, `interview`).
-- `src/api/`: Thin provider adapters (Ollama, Gemini, OpenAI, Anthropic).
-- `src/prompts/`: LLM prompt templates (`clarify.md`, planned `extract.md`).
-- `src/extract/` *(planned)*: Extraction orchestrator with repair loop.
-- `src/generator/` *(planned)*: TypeScript type generator and constraint assertion generator.
+- `src/api/`: Thin provider adapters (Ollama, Gemini, OpenAI, Anthropic, DeepSeek).
+- `src/prompts/`: LLM prompt templates (`clarify.md`, `extract.md`).
+- `src/extract/`: Extraction orchestrator with repair loop (`types.ts`, `extractor.ts`).
+- `src/generator/`: TypeScript type generator (`types.ts`; constraint assertions are Phase 3).
+- `src/check/`: `verbo check` pipeline wiring extract → generate → `deno check` → repair.
 - `src/interview/` *(planned)*: Interactive interview engine with write-back.
 - `docs/`: `DESIGN.md` (authoritative), plus historical docs.
-- `test/`: Fixture specs — `guild/` and `todo/` (plain `.md` files with no special syntax).
+- `test/`: Fixture specs — `classroom/`, `guild/`, and `todo/` (plain `.md` files with no special syntax).
 
 **A typical verbo project:**
 
@@ -56,18 +57,18 @@ Verbo does NOT generate application code. It validates specifications. The outpu
 
 - **Tool implementation:** Deno + TypeScript, functional style.
 - **Specification input:** Plain Markdown (natural language, no required syntax).
-- **AI Providers:** Ollama (local), Google Gemini, OpenAI, Anthropic.
+- **AI Providers:** Ollama (local), Google Gemini, OpenAI, Anthropic, DeepSeek.
 - **Output validation:** `deno check` (type-checking) + generated assertion code (value constraints).
 
 ## 6. Project Goals & Roadmap
 
-- **Current Status:** Pivoted from code generation to specification engineering. Old codegen code removed. CLI supports `clarify`; `check` and `interview` are stubs. Building toward the design in `docs/DESIGN.md`.
-- **Phases:** Cleanup (✓ done) → Extraction + repair loop (1) → Type generator (2) → Assertion generator (3) → Interview (4) → CLI polish (5).
+- **Current Status:** Pivoted from code generation to specification engineering. Old codegen code removed. `verbo check` is real: LLM extraction with a repair loop (Phase 1) + type generator (Phase 2), verified end-to-end with the DeepSeek provider (`deepseek-v4-flash`). `clarify` works; `interview` is a stub. Building toward the design in `docs/DESIGN.md`.
+- **Phases:** Cleanup (✓ done) → Extraction + repair loop (✓) → Type generator (✓) → Assertion generator (3) → Interview (4) → CLI polish (5).
 
 ## 7. How to Assist
 
 - **Read the design first:** `docs/DESIGN.md` is authoritative.
 - **To understand the spec format:** Refer to `test/guild/models/*.md` — these are plain Markdown with NO special syntax. The user writes natural language. The LLM does the extraction.
 - **When generating Verbo specs:** Write plain, descriptive Markdown — the way you'd explain models to a teammate. No backtick-quoted types, no constraint annotations, no directives. Be explicit but natural.
-- **When working on the tool:** Priority is the extraction + repair loop (Phase 1). Build `src/extract/` and `src/prompts/extract.md`. Do NOT build a parser or add syntax conventions.
+- **When working on the tool:** Next up is Phase 3 (constraint assertion generator, `.verbo/validate.ts`) and Phase 4 (interactive interview with write-back + audit trail). Do NOT build a parser or add syntax conventions.
 - **Never generate codegen infrastructure:** No SQL, no route handlers, no API scaffolding.

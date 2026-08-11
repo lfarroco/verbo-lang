@@ -67,7 +67,7 @@ that passes `deno check` (extraction gate per DESIGN §15).
 
 ### E. Fixture + tests + housekeeping
 
-- [ ] `test/classroom/` — `main.md`, `models/student.md`, `models/teacher.md`,
+- [x] `test/classroom/` — `main.md`, `models/student.md`, `models/teacher.md`,
   `models/class.md` (README/DESIGN example; Phase 1 gate fixture)
 - [x] `src/generator/types_test.ts` — generated TS assertions
   (created with Task C; 4 tests)
@@ -76,21 +76,22 @@ that passes `deno check` (extraction gate per DESIGN §15).
 - [x] `src/check/pipeline_test.ts` — mocked AI + injected checker, retry logic
   (created with Task D; 4 tests. Requires read/write test permissions —
   `deno.json` `test.permissions` + `./dev test -P`)
-- [ ] `.gitignore` — add `types.verbo.ts`
-- [ ] Docs: README/AI_README status notes (`check` real, DeepSeek provider)
+- [x] `.gitignore` — add `types.verbo.ts` (and `clarifications.json` — also a
+  generated artifact)
+- [x] Docs: README/AI_README status notes (`check` real, DeepSeek provider)
 
 ### F. End-to-end verification (`-a deepseek -m deepseek-v4-flash`)
 
-> Progress: `todo` ✅ and `guild` ✅ verified during Task D follow-up (both
-> pass in 1 extraction attempt with the thinking-disabled adapter). `classroom`
-> blocked on the Task E fixture. `clarify` smoke passed during Task A.
+> Progress: `classroom` ✅, `todo` ✅, `guild` ✅ — all three fixtures pass in 1
+> extraction attempt with the thinking-disabled adapter. `clarify` smoke ✅.
+> `./dev test` ✅ (17 tests green).
 
-- [ ] `./dev run -A main.ts check --dir test/classroom ...` → valid types
-- [ ] `./dev run -A main.ts check --dir test/todo ...` → valid types
-- [ ] `./dev run -A main.ts check --dir test/guild ...` → valid types
-- [ ] `./dev run -A main.ts clarify --dir test/todo ...` → provider works with
+- [x] `./dev run -A main.ts check --dir test/classroom ...` → valid types
+- [x] `./dev run -A main.ts check --dir test/todo ...` → valid types
+- [x] `./dev run -A main.ts check --dir test/guild ...` → valid types
+- [x] `./dev run -A main.ts clarify --dir test/todo ...` → provider works with
   existing clarify command
-- [ ] `./dev test` → all unit tests green
+- [x] `./dev test` → all unit tests green
 
 ---
 
