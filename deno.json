@@ -8,6 +8,12 @@
   "compilerOptions": {
     "strict": true
   },
+  "test": {
+    "permissions": {
+      "read": true,
+      "write": true
+    }
+  },
   "unstable": [
     "sloppy-imports"
   ]

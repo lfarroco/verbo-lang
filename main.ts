@@ -8,6 +8,7 @@ import { deepseek } from "./src/api/deepseek.ts";
 
 import { createDirIfNotExists, getEnv } from "./src/utils.ts";
 import clarify from "./src/commands/clarify.ts";
+import { runCheck as runPipelineCheck } from "./src/check/pipeline.ts";
 
 // --- Constants ---
 const VERSION = "0.1.0";
@@ -36,7 +37,7 @@ function printHelp(): void {
   console.log("Usage: verbo <command> [OPTIONS...]");
   console.log("");
   console.log("Commands:");
-  console.log("  check      Parse specs and validate (stub — coming in Phase 1-3)");
+  console.log("  check      Extract specs, generate types, validate with deno check");
   console.log("  clarify    Analyze specs for ambiguities using AI");
   console.log("  interview  Resolve ambiguities interactively (stub — coming in Phase 4)");
   console.log("");
@@ -76,15 +77,13 @@ function getProvider(
 
 // --- Command Handlers ---
 
-async function runCheck(sourceDir: string): Promise<void> {
-  createDirIfNotExists(`${sourceDir}/.verbo`);
-  console.log("🔍 Running spec check...");
-  console.log("");
-  console.log("  (Phase 1) Deterministic parser    — not yet implemented");
-  console.log("  (Phase 2) Type generation + deno check — not yet implemented");
-  console.log("  (Phase 3) Constraint assertions   — not yet implemented");
-  console.log("");
-  console.log("💡 Run `verbo clarify` to analyze specs for ambiguities.");
+async function runCheck(sourceDir: string, aiProvider: AiProviderFn): Promise<void> {
+  const result = await runPipelineCheck({ sourceDir, aiProvider });
+  if (result.ok) {
+    console.log(
+      `\n✅ Spec check passed after ${result.attempts} extraction attempt${result.attempts === 1 ? "" : "s"}.`,
+    );
+  }
 }
 
 async function runInterview(sourceDir: string, _aiProvider: AiProviderFn): Promise<void> {
@@ -149,7 +148,7 @@ export async function main(args: string[] = Deno.args): Promise<void> {
   try {
     switch (command) {
       case "check":
-        await runCheck(sourceDir);
+        await runCheck(sourceDir, aiProvider);
         break;
       case "clarify":
         await clarify({ sourceDir, aiProvider });

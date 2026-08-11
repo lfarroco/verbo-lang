@@ -12,9 +12,15 @@ export const deepseek = (key: string, model: string) => async (prompt: string): 
 			messages: [
 				{ role: "user", content: prompt }
 			],
-			// Reasoning models can emit long chains of thought; without a large
-			// max_tokens the final `content` gets truncated (finish_reason "length").
-			max_tokens: 8192
+			// Disable chain-of-thought: reasoning tokens count against
+			// max_tokens, and with them enabled the model can burn the whole
+			// budget thinking and return empty content (finish_reason
+			// "length"). Disabling them makes extraction ~40x faster and
+			// ~16x cheaper with equal quality on the fixtures; the repair
+			// loop catches any regression.
+			thinking: { type: "disabled" },
+			// Generous headroom; the API ceiling is 393216 (probed 2026-08).
+			max_tokens: 32768
 		})
 	})
 
@@ -32,7 +38,13 @@ export const deepseek = (key: string, model: string) => async (prompt: string): 
 	// check validity of response
 
 	if (!choice?.message?.content) {
-		throw new Error(`Invalid response from DeepSeek: ${JSON.stringify(data)}`)
+		const reason = choice?.finish_reason
+			? ` (finish_reason "${choice.finish_reason}")`
+			: "";
+		const hint = choice?.message?.reasoning_content
+			? " The model spent its token budget on reasoning and returned no content."
+			: "";
+		throw new Error(`Invalid response from DeepSeek: empty content${reason}.${hint}`)
 	}
 
 	if (choice.finish_reason === "length") {

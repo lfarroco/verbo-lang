@@ -32,6 +32,11 @@ case "$cmd" in
   shell)
     docker compose run --rm dev bash "$@"
     ;;
+  test)
+    # Activate the permission set from deno.json (test.permissions) — the
+    # pipeline tests write fixtures, types.verbo.ts and .verbo/ logs.
+    docker compose run --rm dev deno test -P "$@"
+    ;;
   ollama)
     sub="${1:-start}"
     shift || true

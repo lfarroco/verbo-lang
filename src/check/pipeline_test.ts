@@ -1,0 +1,172 @@
+import { assertEquals, assertStringIncludes } from "@std/assert";
+import { dirname, join } from "https://deno.land/std@0.224.0/path/mod.ts";
+
+import { extractErrors, runCheck } from "./pipeline.ts";
+
+function makeFixture(files: Record<string, string>): string {
+  const dir = Deno.makeTempDirSync({ prefix: "verbo-pipeline-test-" });
+  for (const [rel, content] of Object.entries(files)) {
+    const path = join(dir, rel);
+    Deno.mkdirSync(dirname(path), { recursive: true });
+    Deno.writeTextFileSync(path, content);
+  }
+  return dir;
+}
+
+function cleanupDir(dir: string): void {
+  try {
+    Deno.removeSync(dir, { recursive: true });
+  } catch {
+    // already gone
+  }
+  try {
+    Deno.removeSync(".verbo", { recursive: true }); // extract() log artifacts
+  } catch {
+    // already gone
+  }
+}
+
+const goodSpec = JSON.stringify({
+  models: [{
+    name: "Todo",
+    source: "models/todo.md",
+    properties: [{ name: "name", type: "string" }],
+    relationships: [],
+  }],
+});
+
+const badSpec = JSON.stringify({
+  models: [{
+    name: "Todo",
+    source: "models/todo.md",
+    properties: [
+      { name: "name", type: "string" },
+      { name: "missing", type: "UndefinedRef" },
+    ],
+    relationships: [],
+  }],
+});
+
+Deno.test("runCheck succeeds on the first attempt", async () => {
+  const dir = makeFixture({
+    "main.md": "A todo list API.",
+    "models/todo.md": "A todo has a name.",
+  });
+
+  let extractCalls = 0;
+  const aiProvider = async () => {
+    extractCalls++;
+    return goodSpec;
+  };
+  const checkedPaths: string[] = [];
+  const fakeCheck = async (path: string) => {
+    checkedPaths.push(path);
+    return { ok: true, stderr: "" };
+  };
+
+  try {
+    const result = await runCheck({
+      sourceDir: dir,
+      aiProvider,
+      runDenoCheck: fakeCheck,
+    });
+    assertEquals(result.ok, true);
+    assertEquals(result.attempts, 1);
+    assertEquals(extractCalls, 1);
+    assertEquals(checkedPaths.length, 1);
+
+    const written = Deno.readTextFileSync(checkedPaths[0]);
+    assertStringIncludes(written, "export type Todo = {");
+    assertStringIncludes(written, "name: string;");
+  } finally {
+    cleanupDir(dir);
+  }
+});
+
+Deno.test("runCheck feeds deno check errors back and repairs", async () => {
+  const dir = makeFixture({
+    "main.md": "A todo list API.",
+    "models/todo.md": "A todo has a name.",
+  });
+
+  let extractCalls = 0;
+  const repairPrompts: string[] = [];
+  const aiProvider = async (prompt: string) => {
+    extractCalls++;
+    // The repair section appends error bullets ("- <error>"); the base prompt
+    // template also mentions the repair round, so match the bullet instead.
+    if (prompt.includes("- Cannot find name 'UndefinedRef'.")) {
+      repairPrompts.push(prompt);
+      return goodSpec;
+    }
+    return badSpec;
+  };
+  const fakeCheck = async (path: string) => {
+    const text = Deno.readTextFileSync(path);
+    if (text.includes("UndefinedRef")) {
+      return {
+        ok: false,
+        stderr: "error: TS2304 [ERROR]: Cannot find name 'UndefinedRef'.\n  --> " + path,
+      };
+    }
+    return { ok: true, stderr: "" };
+  };
+
+  try {
+    const result = await runCheck({
+      sourceDir: dir,
+      aiProvider,
+      runDenoCheck: fakeCheck,
+    });
+    assertEquals(result.ok, true);
+    assertEquals(result.attempts, 2);
+    assertEquals(extractCalls, 2);
+    assertEquals(repairPrompts.length, 1);
+    assertStringIncludes(repairPrompts[0], "Cannot find name 'UndefinedRef'.");
+  } finally {
+    cleanupDir(dir);
+  }
+});
+
+Deno.test("runCheck gives up after max repair rounds and reports errors", async () => {
+  const dir = makeFixture({
+    "main.md": "A todo list API.",
+    "models/todo.md": "A todo has a name.",
+  });
+
+  let extractCalls = 0;
+  const aiProvider = async () => {
+    extractCalls++;
+    return badSpec;
+  };
+  const fakeCheck = async () => {
+    return {
+      ok: false,
+      stderr: "error: TS2304 [ERROR]: Cannot find name 'UndefinedRef'.\n",
+    };
+  };
+
+  try {
+    const result = await runCheck({
+      sourceDir: dir,
+      aiProvider,
+      runDenoCheck: fakeCheck,
+    });
+    assertEquals(result.ok, false);
+    assertEquals(result.attempts, 4); // initial + 3 repair rounds
+    assertEquals(extractCalls, 4);
+    assertEquals(result.errors, ["Cannot find name 'UndefinedRef'."]);
+  } finally {
+    cleanupDir(dir);
+  }
+});
+
+Deno.test("extractErrors parses TS error lines and falls back to raw stderr", () => {
+  const stderr = [
+    "TS2304 [ERROR]: Cannot find name 'Class'.",
+    "  --> types.verbo.ts:10:3",
+    "error: Type checking failed.",
+  ].join("\n");
+  assertEquals(extractErrors(stderr), ["Cannot find name 'Class'."]);
+  assertEquals(extractErrors("no TS lines here"), ["no TS lines here"]);
+});

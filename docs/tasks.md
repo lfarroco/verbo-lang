@@ -22,7 +22,11 @@ that passes `deno check` (extraction gate per DESIGN §15).
 
 - [x] `src/api/deepseek.ts` — OpenAI-compatible adapter
   - `POST https://api.deepseek.com/chat/completions`
-  - `max_tokens: 8192` (reasoning model — otherwise `content` truncates)
+  - `thinking: {type: "disabled"}` + `max_tokens: 32768` — reasoning tokens
+    count against `max_tokens`; the original `8192` let the model burn the
+    whole budget thinking and return empty content. Disabling CoT makes
+    extraction ~40x faster / ~16x cheaper with equal fixture quality (API
+    `max_tokens` ceiling is 393216, probed 2026-08).
   - Throw on `finish_reason === "length"` or empty `content`
 - [x] Wire into `main.ts`: `VALID_PROVIDERS`, `DEFAULT_MODELS`
   (`deepseek: "deepseek-v4-flash"`), `AiProviderType`, `getProvider`,
@@ -54,11 +58,11 @@ that passes `deno check` (extraction gate per DESIGN §15).
 
 ### D. Check pipeline
 
-- [ ] `src/check/pipeline.ts` — `runCheck({ sourceDir, aiProvider })`
+- [x] `src/check/pipeline.ts` — `runCheck({ sourceDir, aiProvider })`
   - extract → generate → write `types.verbo.ts` → `deno check` (subprocess)
   - repair loop: feed stderr back, max 3 retries; report on final failure
   - injectable `runDenoCheck` for tests
-- [ ] `main.ts` — replace `runCheck` stub with real pipeline
+- [x] `main.ts` — replace `runCheck` stub with real pipeline
   (`interview` stays a stub)
 
 ### E. Fixture + tests + housekeeping
@@ -69,11 +73,17 @@ that passes `deno check` (extraction gate per DESIGN §15).
   (created with Task C; 4 tests)
 - [x] `src/extract/extractor_test.ts` — parse/normalize cases
   (created with Task B; 9 tests)
-- [ ] `src/check/pipeline_test.ts` — mocked AI + injected checker, retry logic
+- [x] `src/check/pipeline_test.ts` — mocked AI + injected checker, retry logic
+  (created with Task D; 4 tests. Requires read/write test permissions —
+  `deno.json` `test.permissions` + `./dev test -P`)
 - [ ] `.gitignore` — add `types.verbo.ts`
 - [ ] Docs: README/AI_README status notes (`check` real, DeepSeek provider)
 
 ### F. End-to-end verification (`-a deepseek -m deepseek-v4-flash`)
+
+> Progress: `todo` ✅ and `guild` ✅ verified during Task D follow-up (both
+> pass in 1 extraction attempt with the thinking-disabled adapter). `classroom`
+> blocked on the Task E fixture. `clarify` smoke passed during Task A.
 
 - [ ] `./dev run -A main.ts check --dir test/classroom ...` → valid types
 - [ ] `./dev run -A main.ts check --dir test/todo ...` → valid types

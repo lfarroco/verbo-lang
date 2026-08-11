@@ -74,7 +74,7 @@ dev-shell:
 	docker compose run --rm dev bash
 
 dev-test:
-	$(DEV) deno test
+	$(DEV) deno test -P
 
 dev-check:
 	$(DEV) deno check main.ts
