@@ -45,3 +45,14 @@ export function sortBySeverity(
     )
     .map(({ question }) => question);
 }
+
+/**
+ * True when `severity` is at least as important as `threshold`
+ * (CRITICAL ≥ HIGH ≥ MEDIUM). Used by `--min-severity` / `--fail-on`.
+ */
+export function severityAtLeast(
+  severity: Severity,
+  threshold: Severity,
+): boolean {
+  return SEVERITY_ORDER[severity] <= SEVERITY_ORDER[threshold];
+}

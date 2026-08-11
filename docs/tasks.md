@@ -26,20 +26,20 @@ that passes `deno check` (extraction gate per DESIGN §15), and the generated
 - [x] `src/api/deepseek.ts` — OpenAI-compatible adapter
   - `POST https://api.deepseek.com/chat/completions`
   - `thinking: {type: "disabled"}` + `max_tokens: 32768` — reasoning tokens
-    count against `max_tokens`; the original `8192` let the model burn the
-    whole budget thinking and return empty content. Disabling CoT makes
-    extraction ~40x faster / ~16x cheaper with equal fixture quality (API
-    `max_tokens` ceiling is 393216, probed 2026-08).
+    count against `max_tokens`; the original `8192` let the model burn the whole
+    budget thinking and return empty content. Disabling CoT makes extraction
+    ~40x faster / ~16x cheaper with equal fixture quality (API `max_tokens`
+    ceiling is 393216, probed 2026-08).
   - Throw on `finish_reason === "length"` or empty `content`
 - [x] Wire into `main.ts`: `VALID_PROVIDERS`, `DEFAULT_MODELS`
-  (`deepseek: "deepseek-v4-flash"`), `AiProviderType`, `getProvider`,
-  `printHelp`
+      (`deepseek: "deepseek-v4-flash"`), `AiProviderType`, `getProvider`,
+      `printHelp`
 - [x] `docker-compose.yml` — pass `DEEPSEEK_KEY: ${DEEPSEEK_KEY:-}` to `dev`
 
 ### B. Extraction
 
-- [x] `src/extract/types.ts` — extracted-spec schema
-  (`ExtractedSpec`, `Model`, `Property`, `Constraint`, `Relationship`)
+- [x] `src/extract/types.ts` — extracted-spec schema (`ExtractedSpec`, `Model`,
+      `Property`, `Constraint`, `Relationship`)
 - [x] `src/prompts/extract.md` — extraction prompt
   - Type + constraint vocabulary; `{"models": [...]}` JSON envelope
   - Few-shot examples: classroom + todo fixtures
@@ -52,7 +52,8 @@ that passes `deno check` (extraction gate per DESIGN §15), and the generated
 ### C. Type generator
 
 - [x] `src/generator/types.ts` — pure `generateTypes(spec): string`
-  - `date` → `Date`; primitives as-is; model refs → direct; `string[]`/`number[]`
+  - `date` → `Date`; primitives as-is; model refs → direct;
+    `string[]`/`number[]`
   - `enum` constraint → `type X = "a" | "b";` union
   - `optional` → `?`
   - relationships → fields: to-many → `T[]`, to-one/many-to-one → `T`
@@ -65,22 +66,22 @@ that passes `deno check` (extraction gate per DESIGN §15), and the generated
   - extract → generate → write `types.verbo.ts` → `deno check` (subprocess)
   - repair loop: feed stderr back, max 3 retries; report on final failure
   - injectable `runDenoCheck` for tests
-- [x] `main.ts` — replace `runCheck` stub with real pipeline
-  (`interview` stays a stub)
+- [x] `main.ts` — replace `runCheck` stub with real pipeline (`interview` stays
+      a stub)
 
 ### E. Fixture + tests + housekeeping
 
 - [x] `test/classroom/` — `main.md`, `models/student.md`, `models/teacher.md`,
-  `models/class.md` (README/DESIGN example; Phase 1 gate fixture)
-- [x] `src/generator/types_test.ts` — generated TS assertions
-  (created with Task C; 4 tests)
-- [x] `src/extract/extractor_test.ts` — parse/normalize cases
-  (created with Task B; 9 tests)
+      `models/class.md` (README/DESIGN example; Phase 1 gate fixture)
+- [x] `src/generator/types_test.ts` — generated TS assertions (created with Task
+      C; 4 tests)
+- [x] `src/extract/extractor_test.ts` — parse/normalize cases (created with Task
+      B; 9 tests)
 - [x] `src/check/pipeline_test.ts` — mocked AI + injected checker, retry logic
-  (created with Task D; 4 tests. Requires read/write test permissions —
-  `deno.json` `test.permissions` + `./dev test -P`)
+      (created with Task D; 4 tests. Requires read/write test permissions —
+      `deno.json` `test.permissions` + `./dev test -P`)
 - [x] `.gitignore` — add `types.verbo.ts` (and `clarifications.json` — also a
-  generated artifact)
+      generated artifact)
 - [x] Docs: README/AI_README status notes (`check` real, DeepSeek provider)
 
 ### F. End-to-end verification (`-a deepseek -m deepseek-v4-flash`)
@@ -93,16 +94,16 @@ that passes `deno check` (extraction gate per DESIGN §15), and the generated
 - [x] `./dev run -A main.ts check --dir test/todo ...` → valid types
 - [x] `./dev run -A main.ts check --dir test/guild ...` → valid types
 - [x] `./dev run -A main.ts clarify --dir test/todo ...` → provider works with
-  existing clarify command
+      existing clarify command
 - [x] `./dev test` → all unit tests green
 
 ### G. Assertion generator (Phase 3)
 
 - [x] `src/generator/assertions.ts` — pure `generateAssertions(spec): string`
-  producing `.verbo/validate.ts` (DESIGN §8)
-  - Per constrained property: `assert_<Model>_<prop>(value, source)` that
-    throws on violation (§8.2 shape); multiple constraints on one property are
-    merged into a single function
+      producing `.verbo/validate.ts` (DESIGN §8)
+  - Per constrained property: `assert_<Model>_<prop>(value, source)` that throws
+    on violation (§8.2 shape); multiple constraints on one property are merged
+    into a single function
   - Per model: `validate<Model>(value): string[]` returning violation messages
     (empty when clean) — runnable for `deno run` / CI (§12 consumer)
   - Constraint mapping: `range` → `< min || > max`, `minimum`/`maximum` →
@@ -112,46 +113,108 @@ that passes `deno check` (extraction gate per DESIGN §15), and the generated
     scalar `string`/`number` properties; `required` uses `unknown` (+casts when
     merged with typed checks) so the output always passes `deno check`
 - [x] `src/generator/assertions_test.ts` — 6 tests: classroom output, merged
-  constraints, required-through-`unknown`, incompatible-constraint skipping,
-  header-only output, and a `deno check` integration test on generated output
+      constraints, required-through-`unknown`, incompatible-constraint skipping,
+      header-only output, and a `deno check` integration test on generated
+      output
 - [x] `src/check/pipeline.ts` — after `types.verbo.ts` passes `deno check`,
-  write `.verbo/validate.ts` (create `.verbo/` dir) and `deno check` it too
-  (`runDenoCheck` failure here is a generator bug, not LLM-repairable)
+      write `.verbo/validate.ts` (create `.verbo/` dir) and `deno check` it too
+      (`runDenoCheck` failure here is a generator bug, not LLM-repairable)
 - [x] `deno.json` — add `run` to `test.permissions` (assertion integration test
-  spawns `deno check`)
+      spawns `deno check`)
 - [x] Phase 3 gate (DESIGN §15): deliberate violations in `test/classroom/`,
-  `test/todo/`, `test/guild/` caught by generated assertions (verified with
-  `-a deepseek -m deepseek-v4-flash`; throwaway runners under each
-  `.verbo/gate-violations.ts`, gitignored)
+      `test/todo/`, `test/guild/` caught by generated assertions (verified with
+      `-a deepseek -m deepseek-v4-flash`; throwaway runners under each
+      `.verbo/gate-violations.ts`, gitignored)
 
 ### H. Interview (Phase 4)
 
 - [x] `src/interview/engine.ts` — `runInterview({ sourceDir, aiProvider })`
-  reads `clarifications.json` (defensive parse, see `parseClarifications`),
-  presents questions severity-ordered (CRITICAL → HIGH → MEDIUM, stable per
-  severity per DESIGN §9.2), and resolves them interactively (`ask`/`log`
-  injectable for tests; EOF-safe for piped stdin)
+      reads `clarifications.json` (defensive parse, see `parseClarifications`),
+      presents questions severity-ordered (CRITICAL → HIGH → MEDIUM, stable per
+      severity per DESIGN §9.2), and resolves them interactively (`ask`/`log`
+      injectable for tests; EOF-safe for piped stdin)
 - [x] `src/prompts/interview.md` — proposal prompt template: the LLM proposes a
-  more precise rewrite of the exact ambiguous passage
+      more precise rewrite of the exact ambiguous passage
 - [x] Write-back: accepted proposals / numbered options / custom answers replace
-  the `context` passage in the `.md` files in place (`applyAnswer`, DESIGN §9);
-  skips and missing files are recorded but leave the file untouched
+      the `context` passage in the `.md` files in place (`applyAnswer`, DESIGN
+      §9); skips and missing files are recorded but leave the file untouched
 - [x] Audit trail under `.verbo/clarifications/` — `interview-<session>.jsonl`
-  decision log + `interview-log.md` summary (DESIGN §12)
+      decision log + `interview-log.md` summary (DESIGN §12)
 - [x] `main.ts` — `verbo interview` wired to the engine; `--recheck` boolean
-  option (`-r`) re-runs clarify on the same dir after the round and reports how
-  many ambiguities remain (DESIGN §9.3)
+      option (`-r`) re-runs clarify on the same dir after the round and reports
+      how many ambiguities remain (DESIGN §9.3)
 - [x] `src/commands/clarify.ts` — outputs (`clarifications.json`, prompt/log
-  artifacts) now written under `sourceDir` instead of the CWD, so
-  `--recheck`/interview read the right file and artifacts stay with the project
+      artifacts) now written under `sourceDir` instead of the CWD, so
+      `--recheck`/interview read the right file and artifacts stay with the
+      project
 - [x] `src/interview/engine_test.ts` + `types.ts` — parse/normalize, severity
-  ordering, and decision handling unit tests (part of the 36)
+      ordering, and decision handling unit tests (part of the 36)
 - [x] End-to-end verified with DeepSeek (`-a deepseek -m deepseek-v4-flash`) on
-  a scratch `test/e2e-interview` copy of the `guild` fixture (removed after the
-  run): clarify → interview (all answers accepted) → `--recheck` re-clarify loop
+      a scratch `test/e2e-interview` copy of the `guild` fixture (removed after
+      the run): clarify → interview (all answers accepted) → `--recheck`
+      re-clarify loop
 
 ---
 
-## Deferred (later milestones, per DESIGN §15)
+## Phase 4.5 — Interview robustness, clarify convergence, CLI polish
 
-- Phase 5 — CLI polish (`check`/`interview` help), CI
+> Follow-up improvements surfaced by the `examples/ls` + `test/ls` exercise
+> (plain-Markdown spec → 3 interview rounds). Authoritative design:
+> [`docs/DESIGN.md`](./DESIGN.md). Source of evidence for each task is noted in
+> the task body.
+
+### 1. Interview write-back robustness
+
+- [x] **T1. Structure-preserving write-back for property bullets** — custom
+      answers that drop the `name:` prefix of a matched `- name: ...` bullet
+      clobber the property name (observed: `- size: The size...` →
+      `- a
+      directory always reports size 0...`). `preserveBulletPrefix`
+      re-adds the prefix.
+- [x] **T2. Warn when write-back didn't apply** — `applyAnswer` silently
+      returned the file unchanged when the `context` excerpt was missing; the
+      interview now warns and records the no-op in the audit trail.
+- [x] **T3. Prevent duplicate phrases from naive replacement** — replacing a
+      context substring with an answer that re-states the following text
+      duplicated it (observed: "Defaults to the current directory." twice).
+      `trimTrailingOverlap` removes the trailing overlap.
+- [x] **T4. Same-context questions must not chain-replace** — two questions in
+      one round shared `-R lists subdirectories recursively.`; the second
+      write-back re-targeted the first answer's text. Consumed contexts are
+      tracked per session and repeated passages are skipped with a warning.
+- [x] **T5. Diff preview before write-back** — interactive runs show a `- old` /
+      `+ new` line diff and ask for confirmation; piped/scripted runs stay
+      non-interactive (`interactive` option, default `Deno.stdin.isTerminal()`).
+
+### 2. Clarify convergence & iteration metrics
+
+- [x] **T6. Question lineage** — previously resolved `{file, question, answer}`
+      records (from `.verbo/clarifications/interview-*.jsonl`) are fed into the
+      clarify prompt so it stops re-asking; the summary reports
+      `N new, M repeat`.
+- [x] **T7. `--min-severity` flag** — `clarify --min-severity HIGH` filters
+      `clarifications.json`; `interview --min-severity HIGH` skips
+      lower-severity questions (recorded as skipped). Replaces the dead
+      `priority` param stub.
+- [x] **T8. Convergence report** — `interview --recheck` prints `prev → current`
+      plus a severity breakdown, not just a bare count.
+- [x] **T9. `--fail-on <severity>` for CI** — commands exit 1 when remaining
+      questions at/above the threshold exist (default off).
+
+### 3. Docs, fixture, and small fixes
+
+- [x] **T10. Document interview best practices** — "getting the most out of
+      interviews" section in `README.md` (keep `name:` prefixes, expect
+      multi-round loops, when to stop).
+- [x] **T11. `test/ls` regression fixture** — pipeline smoke test with a canned
+      extraction of the `Entry`/`Options` shape; guards against regressions in
+      extraction of non-web-API specs.
+- [x] **T12. Pin CLI message formatting** — `formatRemainingMessage(n)` fixes
+      the singular "1 ambiguity remains" grammar and is covered by unit tests.
+- [x] **T13. Extraction: container model vs self-reference** — the ls spec had
+      extracted `Entry.entries: Entry[]` AND `DirectoryListing { entries }` from
+      the same sentence; prompt guidance now prefers one interpretation, never
+      both.
+- [x] **T14. Never aggregate Verbo's own artifacts** — `listFilesAt` skips
+      dot-directories (`.verbo`, `.git`), so the clarify audit trail (Markdown)
+      can no longer pollute `check`/`clarify` corpora.

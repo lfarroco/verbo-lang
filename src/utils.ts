@@ -1,4 +1,3 @@
-
 export const getEnv = (
   dotEnvFilePath: string,
   key: string,
@@ -27,10 +26,17 @@ export const listFilesAt = (dir: string, extensions: string[]): string[] => {
   const files: string[] = [];
 
   for (const entry of Deno.readDirSync(dir)) {
+    // Skip hidden/generated directories (e.g. .verbo, .git) so Verbo never
+    // aggregates its own artifacts — the clarify audit trail is Markdown and
+    // would otherwise pollute the extraction/clarify corpus (T14).
+    if (entry.isDirectory && entry.name.startsWith(".")) continue;
+
     const path = `${dir}/${entry.name}`;
     if (entry.isDirectory) {
       files.push(...listFilesAt(path, extensions));
-    } else if (entry.isFile && extensions.some(ext => entry.name.endsWith(`.${ext}`))) {
+    } else if (
+      entry.isFile && extensions.some((ext) => entry.name.endsWith(`.${ext}`))
+    ) {
       files.push(path);
     }
   }
@@ -51,7 +57,10 @@ export function writefile(destination: string, text: string) {
   Deno.writeTextFileSync(destination, text);
 }
 
-export function aggregateFilesForPrompt(sourceDir: string, extensions: string[] = ["md"]): string {
+export function aggregateFilesForPrompt(
+  sourceDir: string,
+  extensions: string[] = ["md"],
+): string {
   console.log("Aggregating source files for prompt...");
 
   const files = listFilesAt(sourceDir, extensions).sort();
@@ -68,7 +77,11 @@ export function aggregateFilesForPrompt(sourceDir: string, extensions: string[] 
 
 // ---- AI generation helper (shared by clarify / interview) ----
 
-import { dirname, fromFileUrl, join } from "https://deno.land/std@0.224.0/path/mod.ts";
+import {
+  dirname,
+  fromFileUrl,
+  join,
+} from "https://deno.land/std@0.224.0/path/mod.ts";
 
 /** Extracts a code block or JSON from an AI markdown response. */
 function extractCode(text: string, extractJson = false): string {
@@ -80,7 +93,9 @@ function extractCode(text: string, extractJson = false): string {
       const end = text.lastIndexOf("}");
       if (start !== -1 && end > start) return text.slice(start, end + 1).trim();
     }
-    console.warn("Could not find a markdown code block. Returning the full response as-is.");
+    console.warn(
+      "Could not find a markdown code block. Returning the full response as-is.",
+    );
     return text;
   }
 
@@ -88,7 +103,9 @@ function extractCode(text: string, extractJson = false): string {
   const firstLineEnd = code.indexOf("\n");
   if (firstLineEnd !== -1) {
     const firstLine = code.substring(0, firstLineEnd).trim();
-    if (firstLine.length > 0 && firstLine.length < 15 && !firstLine.includes(" ")) {
+    if (
+      firstLine.length > 0 && firstLine.length < 15 && !firstLine.includes(" ")
+    ) {
       code = code.substring(firstLineEnd + 1);
     }
   }
@@ -110,15 +127,23 @@ export interface AiGenerationOptions {
 /** Call the AI provider with a prompt template + data, log everything, write output. */
 export async function runAiGeneration(options: AiGenerationOptions) {
   const {
-    aiProvider, promptTemplatePath, promptData,
-    outputPath, outputFile, promptLogFile, responseLogFile,
-    startLogMessage, extractJson,
+    aiProvider,
+    promptTemplatePath,
+    promptData,
+    outputPath,
+    outputFile,
+    promptLogFile,
+    responseLogFile,
+    startLogMessage,
+    extractJson,
   } = options;
 
   console.log(startLogMessage);
 
   const moduleDir = dirname(fromFileUrl(import.meta.url));
-  const promptTemplate = await Deno.readTextFile(join(moduleDir, promptTemplatePath));
+  const promptTemplate = await Deno.readTextFile(
+    join(moduleDir, promptTemplatePath),
+  );
   const submitPrompt = `${promptTemplate}\n${promptData}`;
   writefile(join(outputPath, promptLogFile), submitPrompt);
   const responseText = await aiProvider(submitPrompt);

@@ -8,11 +8,18 @@ import { dirname, join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
 import {
   applyAnswer,
+  diffPreview,
   parseClarifications,
+  preserveBulletPrefix,
   runInterview,
   sessionId,
+  trimTrailingOverlap,
 } from "./engine.ts";
-import { type ClarificationQuestion, sortBySeverity } from "./types.ts";
+import {
+  type ClarificationQuestion,
+  severityAtLeast,
+  sortBySeverity,
+} from "./types.ts";
 
 function writeFile(dir: string, rel: string, content: string): void {
   const path = join(dir, rel);
@@ -141,8 +148,10 @@ Deno.test("applyAnswer replaces the first occurrence and preserves the rest", ()
     "the item's name",
     "the item's full name (max 100 chars)",
   );
+  assertEquals(updated.applied, true);
+  assertEquals(updated.index, content.indexOf("the item's name"));
   assertEquals(
-    updated,
+    updated.content,
     [
       "- name: the item's full name (max 100 chars)",
       "- status: active or completed",
@@ -151,12 +160,82 @@ Deno.test("applyAnswer replaces the first occurrence and preserves the rest", ()
   );
 });
 
-Deno.test("applyAnswer returns the original content when the context is missing", () => {
+Deno.test("applyAnswer reports applied:false when the context is missing", () => {
   const content = "- name: hello\n";
   assertEquals(
     applyAnswer(content, "does not exist anywhere", "replacement"),
-    content,
+    { content, applied: false, index: -1 },
   );
+});
+
+// --- preserveBulletPrefix (T1) ---
+
+Deno.test("preserveBulletPrefix re-adds a dropped property name", () => {
+  const context = "- size: The size of the entry in bytes.";
+  assertEquals(
+    preserveBulletPrefix(context, "always zero"),
+    "- size: always zero",
+  );
+});
+
+Deno.test("preserveBulletPrefix keeps an answer that already has the name", () => {
+  assertEquals(
+    preserveBulletPrefix("- size: ...", "size: always zero"),
+    "size: always zero",
+  );
+  assertEquals(
+    preserveBulletPrefix("- size: ...", "- size: always zero"),
+    "- size: always zero",
+  );
+  assertEquals(
+    preserveBulletPrefix("name: the name", "name: a full name"),
+    "name: a full name",
+  );
+});
+
+Deno.test("preserveBulletPrefix leaves non-property contexts alone", () => {
+  assertEquals(
+    preserveBulletPrefix("some prose passage", "a rewrite"),
+    "a rewrite",
+  );
+});
+
+// --- trimTrailingOverlap (T3) ---
+
+Deno.test("trimTrailingOverlap removes a phrase that already follows the context", () => {
+  const content = "- path: pick a dir. Defaults to the current directory.\n";
+  const context = "pick a dir";
+  const answer =
+    "pick a dir, or a single file. Defaults to the current directory.";
+  assertEquals(
+    trimTrailingOverlap(answer, content, context),
+    "pick a dir, or a single file.",
+  );
+});
+
+Deno.test("trimTrailingOverlap ignores short or word-cutting overlaps", () => {
+  const content = "the cat sat on the mat\n";
+  // overlap "at" is too short
+  assertEquals(
+    trimTrailingOverlap("the cat sat", content, "the cat"),
+    "the cat sat",
+  );
+  // overlap would cut the word "mathematics" -> boundary check rejects it
+  const answer = "the cat mathematics";
+  const cut = trimTrailingOverlap(answer, "mathematics is fun\n", "the cat");
+  assertEquals(cut, answer);
+});
+
+// --- diffPreview (T5) ---
+
+Deno.test("diffPreview shows only the changed lines", () => {
+  const before = ["a: 1", "b: 2", "c: 3"].join("\n");
+  const after = ["a: 1", "b: 9", "c: 3"].join("\n");
+  assertEquals(diffPreview(before, after), "- b: 2\n+ b: 9");
+});
+
+Deno.test("diffPreview reports no change", () => {
+  assertEquals(diffPreview("same", "same"), "(no change)");
 });
 
 // --- sessionId ---
@@ -397,6 +476,177 @@ Deno.test("runInterview records a skipped decision when the spec file is missing
     assertEquals(
       JSON.parse(readAuditFile(auditDir, /^interview-.*\.jsonl$/)).answer,
       "file not found",
+    );
+  } finally {
+    Deno.removeSync(dir, { recursive: true });
+  }
+});
+
+Deno.test("severityAtLeast compares severities", () => {
+  assertEquals(severityAtLeast("CRITICAL", "HIGH"), true);
+  assertEquals(severityAtLeast("HIGH", "HIGH"), true);
+  assertEquals(severityAtLeast("MEDIUM", "HIGH"), false);
+  assertEquals(severityAtLeast("HIGH", "CRITICAL"), false);
+});
+
+Deno.test("runInterview warns and skips when the context is missing (T2)", async () => {
+  const dir = Deno.makeTempDirSync({ prefix: "verbo-interview-noctx-" });
+  try {
+    writeFile(dir, "todo.md", "A todo has a name.\n");
+    writeFile(
+      dir,
+      "clarifications.json",
+      JSON.stringify([
+        {
+          severity: "HIGH",
+          file: "todo.md",
+          context: "this context does not exist",
+          question: "What?",
+        },
+      ]),
+    );
+    const logLines: string[] = [];
+    const result = await runInterview({
+      sourceDir: dir,
+      aiProvider: async () => "a rewrite",
+      ask: async () => "1",
+      log: (m) => logLines.push(m),
+    });
+
+    assertEquals(result.answered, 0);
+    assertEquals(result.skipped, 1);
+    assertEquals(result.filesTouched, []);
+    assertEquals(result.decisions[0].note, "context not found in file");
+    // File left unchanged.
+    assertEquals(
+      Deno.readTextFileSync(join(dir, "todo.md")),
+      "A todo has a name.\n",
+    );
+    assertStringIncludes(logLines.join("\n"), "context not found");
+  } finally {
+    Deno.removeSync(dir, { recursive: true });
+  }
+});
+
+Deno.test("runInterview skips a question whose context was already rewritten (T4)", async () => {
+  const dir = Deno.makeTempDirSync({ prefix: "verbo-interview-rectx-" });
+  try {
+    writeFile(dir, "todo.md", "-R lists subdirectories recursively.\n");
+    writeFile(
+      dir,
+      "clarifications.json",
+      JSON.stringify([
+        {
+          severity: "MEDIUM",
+          file: "todo.md",
+          context: "-R lists subdirectories recursively.",
+          question: "First",
+        },
+        {
+          severity: "MEDIUM",
+          file: "todo.md",
+          context: "-R lists subdirectories recursively.",
+          question: "Second",
+        },
+      ]),
+    );
+    const result = await runInterview({
+      sourceDir: dir,
+      aiProvider: async () => "proposed",
+      ask: async () => "1",
+      log: () => {},
+    });
+
+    assertEquals(result.answered, 1);
+    assertEquals(result.skipped, 1);
+    assertEquals(result.filesTouched, ["todo.md"]);
+    assertEquals(
+      result.decisions[1].note,
+      "context already rewritten this session",
+    );
+    const content = Deno.readTextFileSync(join(dir, "todo.md"));
+    // The second answer must NOT have chained into the first.
+    assertEquals(content, "proposed\n");
+  } finally {
+    Deno.removeSync(dir, { recursive: true });
+  }
+});
+
+Deno.test("runInterview skips questions below --min-severity (T7)", async () => {
+  const dir = Deno.makeTempDirSync({ prefix: "verbo-interview-minsev-" });
+  try {
+    writeFile(dir, "todo.md", "A todo has a status, active or completed.\n");
+    writeFile(
+      dir,
+      "clarifications.json",
+      JSON.stringify([
+        {
+          severity: "CRITICAL",
+          file: "todo.md",
+          context: "a status",
+          question: "Q1",
+        },
+        {
+          severity: "MEDIUM",
+          file: "todo.md",
+          context: "active or completed",
+          question: "Q2",
+        },
+      ]),
+    );
+    let proposals = 0;
+    const result = await runInterview({
+      sourceDir: dir,
+      aiProvider: async () => {
+        proposals++;
+        return "a status with allowed values";
+      },
+      ask: async () => "1",
+      minSeverity: "HIGH",
+      log: () => {},
+    });
+
+    assertEquals(proposals, 1); // MEDIUM question never proposed to the LLM
+    assertEquals(result.answered, 1);
+    assertEquals(result.skipped, 1);
+    assertEquals(result.decisions[0].severity, "CRITICAL");
+    assertEquals(result.decisions[1].note, "below --min-severity HIGH");
+  } finally {
+    Deno.removeSync(dir, { recursive: true });
+  }
+});
+
+Deno.test("runInterview previews and can decline a write when interactive (T5)", async () => {
+  const dir = Deno.makeTempDirSync({ prefix: "verbo-interview-preview-" });
+  try {
+    writeFile(dir, "todo.md", "A todo has a name.\n");
+    writeFile(
+      dir,
+      "clarifications.json",
+      JSON.stringify([
+        {
+          severity: "MEDIUM",
+          file: "todo.md",
+          context: "a name",
+          question: "What?",
+        },
+      ]),
+    );
+    const asks = ["1", "n"]; // accept proposal, then decline the preview
+    const result = await runInterview({
+      sourceDir: dir,
+      aiProvider: async () => "a full name",
+      ask: async () => asks.shift() ?? "s",
+      interactive: true,
+      log: () => {},
+    });
+
+    assertEquals(result.answered, 0);
+    assertEquals(result.skipped, 1);
+    assertEquals(result.decisions[0].note, "preview declined");
+    assertEquals(
+      Deno.readTextFileSync(join(dir, "todo.md")),
+      "A todo has a name.\n",
     );
   } finally {
     Deno.removeSync(dir, { recursive: true });

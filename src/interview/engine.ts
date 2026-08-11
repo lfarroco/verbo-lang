@@ -8,6 +8,7 @@ import { TextLineStream } from "https://deno.land/std@0.224.0/streams/text_line_
 import {
   type ClarificationQuestion,
   type Severity,
+  severityAtLeast,
   sortBySeverity,
 } from "./types.ts";
 
@@ -22,6 +23,11 @@ export interface InterviewOptions {
   ask?: (message: string) => Promise<string>;
   /** Defaults to console.log. */
   log?: (message: string) => void;
+  /** (T7) Skip questions below this severity, recording them as skipped. */
+  minSeverity?: Severity;
+  /** (T5) Show a diff preview and confirm before writing. Defaults to
+   * `Deno.stdin.isTerminal()` — piped/scripted runs stay non-interactive. */
+  interactive?: boolean;
 }
 
 export interface InterviewDecision {
@@ -33,6 +39,8 @@ export interface InterviewDecision {
   /** The resolved rewrite; null when the question was skipped. */
   answer: string | null;
   source: "proposal" | "option" | "custom" | "skipped";
+  /** (T2/T4) Optional reason, e.g. "context not found" / "already rewritten". */
+  note?: string;
 }
 
 export interface InterviewResult {
@@ -139,19 +147,121 @@ export function parseClarifications(text: string): ClarificationQuestion[] {
 
 // --- Applying answers ---
 
+export interface ApplyAnswerResult {
+  content: string;
+  /** False when `context` was not found and the content is unchanged. */
+  applied: boolean;
+  /** Index of the matched `context`, or -1 when not found. */
+  index: number;
+}
+
 /**
  * Replace the FIRST occurrence of `context` in `content` with `answer`.
- * Returns the original content unchanged when `context` is not found.
+ * Reports `applied: false` (content unchanged) when `context` is missing so
+ * callers can warn instead of silently dropping the answer.
  */
 export function applyAnswer(
   content: string,
   context: string,
   answer: string,
+): ApplyAnswerResult {
+  const index = content.indexOf(context);
+  if (index === -1) return { content, applied: false, index: -1 };
+  return {
+    content: content.slice(0, index) + answer +
+      content.slice(index + context.length),
+    applied: true,
+    index,
+  };
+}
+
+/**
+ * (T1) When `context` is a property bullet (`- size: The size...`) or a bare
+ * `name:` property and `answer` dropped the property name, re-add the prefix so
+ * a custom answer cannot clobber the property list structure.
+ */
+export function preserveBulletPrefix(context: string, answer: string): string {
+  const match = context.match(/^([-*]\s+)?([A-Za-z_$][\w]*)(\s*:)/);
+  if (!match) return answer;
+  const propertyName = match[2];
+  // Already starts with the property name (`size: ...` or `- size: ...`).
+  if (
+    new RegExp(`^[-*]?\\s*${escapeRegExp(propertyName)}\\s*:`).test(answer)
+  ) {
+    return answer;
+  }
+  const prefix = `${match[1] ?? ""}${propertyName}${match[3]}`;
+  return `${prefix} ${answer.trimStart()}`;
+}
+
+/**
+ * (T3) If the answer ends with text that already follows the `context` in the
+ * file, trim that trailing overlap so naive replacement doesn't duplicate a
+ * phrase (observed: "...Defaults to the current directory." twice). Minimum
+ * overlap length and a word-boundary check avoid cutting words.
+ */
+export function trimTrailingOverlap(
+  answer: string,
+  content: string,
+  context: string,
 ): string {
   const index = content.indexOf(context);
-  if (index === -1) return content;
-  return content.slice(0, index) + answer +
-    content.slice(index + context.length);
+  if (index === -1) return answer;
+  const suffix = content.slice(index + context.length);
+  const overlap = trailingOverlap(answer, suffix);
+  if (overlap.length < 8) return answer;
+
+  const beforeOverlap = answer.length === overlap.length
+    ? ""
+    : answer[answer.length - overlap.length - 1] ?? "";
+  const boundaryIsClean = answer.length === overlap.length ||
+    !/[A-Za-z0-9]/.test(beforeOverlap);
+  if (!boundaryIsClean) return answer;
+
+  return answer.slice(0, answer.length - overlap.length).replace(/\s+$/, "");
+}
+
+/** Longest suffix of `a` that is a prefix of `b`, skipping leading
+ * non-alphanumeric separators in `b`. */
+export function trailingOverlap(a: string, b: string): string {
+  const bTrimmed = b.replace(/^[^A-Za-z0-9]+/, "");
+  let best = "";
+  for (let i = 1; i <= Math.min(a.length, bTrimmed.length); i++) {
+    const candidate = bTrimmed.slice(0, i);
+    if (a.endsWith(candidate)) best = candidate;
+  }
+  return best;
+}
+
+/**
+ * (T5) Minimal line diff for a before/after pair — prints only the lines that
+ * changed, as `- old` / `+ new`. Used for the write-back preview.
+ */
+export function diffPreview(before: string, after: string): string {
+  const a = before.split("\n");
+  const b = after.split("\n");
+  let start = 0;
+  while (
+    start < a.length && start < b.length && a[start] === b[start]
+  ) {
+    start++;
+  }
+  let endA = a.length - 1;
+  let endB = b.length - 1;
+  while (
+    endA >= start && endB >= start && a[endA] === b[endB]
+  ) {
+    endA--;
+    endB--;
+  }
+  const lines: string[] = [];
+  for (let i = start; i <= endA; i++) lines.push(`- ${a[i]}`);
+  for (let i = start; i <= endB; i++) lines.push(`+ ${b[i]}`);
+  return lines.length === 0 ? "(no change)" : lines.join("\n");
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 // --- Prompt assembly & menu rendering (pure) ---
@@ -256,15 +366,17 @@ function appendDecision(
   );
 
   const answerText = decision.answer ?? "skipped";
+  const logLines = [
+    `## [${decision.severity}] ${decision.file}`,
+    `Question: ${decision.question}`,
+    `Answer: ${answerText}`,
+    `Source: ${decision.source}`,
+  ];
+  if (decision.note) logLines.push(`Note: ${decision.note}`);
+  logLines.push("");
   Deno.writeTextFileSync(
     join(auditDir, "interview-log.md"),
-    [
-      `## [${decision.severity}] ${decision.file}`,
-      `Question: ${decision.question}`,
-      `Answer: ${answerText}`,
-      `Source: ${decision.source}`,
-      "",
-    ].join("\n") + "\n",
+    logLines.join("\n") + "\n",
     { append: true },
   );
 }
@@ -284,6 +396,8 @@ export async function runInterview(
     clarificationsFile = "clarifications.json",
     ask = defaultAsk,
     log = console.log,
+    minSeverity,
+    interactive,
   } = options;
 
   const clarificationsPath = join(sourceDir, clarificationsFile);
@@ -315,6 +429,25 @@ export async function runInterview(
 
   const decisions: InterviewDecision[] = [];
   const filesTouched: string[] = [];
+  // (T4) Contexts already rewritten this session, per file — stops a later
+  // question from re-targeting a passage inside a previous answer.
+  const consumedContexts = new Map<string, Set<string>>();
+  const interactiveMode = interactive ?? Deno.stdin.isTerminal();
+
+  const recordSkipped = (q: ClarificationQuestion, note: string): void => {
+    const decision: InterviewDecision = {
+      timestamp: new Date().toISOString(),
+      severity: q.severity,
+      file: q.file,
+      context: q.context,
+      question: q.question,
+      answer: null,
+      source: "skipped",
+      note,
+    };
+    decisions.push(decision);
+    appendDecision(auditDir, session, decision);
+  };
 
   for (const q of questions) {
     const filePath = join(sourceDir, q.file);
@@ -331,6 +464,22 @@ export async function runInterview(
       };
       decisions.push(decision);
       appendDecision(auditDir, session, decision);
+      continue;
+    }
+
+    // (T7) Severity gate: questions below `--min-severity` are recorded as
+    // skipped and leave the file untouched.
+    if (minSeverity && !severityAtLeast(q.severity, minSeverity)) {
+      recordSkipped(q, `below --min-severity ${minSeverity}`);
+      continue;
+    }
+
+    // (T4) Same-context chaining guard.
+    if (consumedContexts.get(q.file)?.has(q.context)) {
+      log(
+        `⚠️ [${q.severity}] ${q.file}: this passage was already rewritten by an earlier answer this session — skipping.`,
+      );
+      recordSkipped(q, "context already rewritten this session");
       continue;
     }
 
@@ -364,6 +513,58 @@ export async function runInterview(
       source = "skipped";
     }
 
+    if (answer === null) {
+      const decision: InterviewDecision = {
+        timestamp: new Date().toISOString(),
+        severity: q.severity,
+        file: q.file,
+        context: q.context,
+        question: q.question,
+        answer: null,
+        source,
+      };
+      decisions.push(decision);
+      appendDecision(auditDir, session, decision);
+      continue;
+    }
+
+    // (T1) Keep the `name:` prefix on property bullets.
+    answer = preserveBulletPrefix(q.context, answer);
+    // (T3) Don't duplicate a phrase that already follows the context.
+    answer = trimTrailingOverlap(answer, content, q.context);
+
+    const result = applyAnswer(content, q.context, answer);
+
+    // (T2) Context drifted from the file → warn instead of silently no-op.
+    if (!result.applied) {
+      log(
+        `⚠️ [${q.severity}] ${q.file}: could not apply answer — context not found in file. File left unchanged.`,
+      );
+      recordSkipped(q, "context not found in file");
+      continue;
+    }
+
+    // (T5) Preview + confirm when run interactively.
+    if (interactiveMode) {
+      const preview = diffPreview(content, result.content);
+      const confirm = (await ask(
+        `\nChange to ${q.file}:\n${preview}\nApply? [y/N] `,
+      )).trim().toLowerCase();
+      if (confirm !== "y" && confirm !== "yes") {
+        recordSkipped(q, "preview declined");
+        continue;
+      }
+    }
+
+    Deno.writeTextFileSync(filePath, result.content);
+    if (!filesTouched.includes(q.file)) filesTouched.push(q.file);
+    let consumed = consumedContexts.get(q.file);
+    if (!consumed) {
+      consumed = new Set();
+      consumedContexts.set(q.file, consumed);
+    }
+    consumed.add(q.context);
+
     const decision: InterviewDecision = {
       timestamp: new Date().toISOString(),
       severity: q.severity,
@@ -375,11 +576,6 @@ export async function runInterview(
     };
     decisions.push(decision);
     appendDecision(auditDir, session, decision);
-
-    if (source !== "skipped" && answer !== null) {
-      Deno.writeTextFileSync(filePath, applyAnswer(content, q.context, answer));
-      if (!filesTouched.includes(q.file)) filesTouched.push(q.file);
-    }
   }
 
   const answered = decisions.filter((d) => d.source !== "skipped").length;

@@ -1,8 +1,24 @@
 # verbo
 
-A specification engineering tool. Describe data models in loose natural language. Verbo interviews you to resolve ambiguity, writing each answer back into your files — the same `.md` becomes progressively more precise until it's ready for an AI coding tool to consume.
+A specification engineering tool. Describe data models in loose natural
+language. Verbo interviews you to resolve ambiguity, writing each answer back
+into your files — the same `.md` becomes progressively more precise until it's
+ready for an AI coding tool to consume.
 
-> **Status (2026 redesign):** Verbo has pivoted from code generation to **specification engineering**. You write loose Markdown. Verbo's interview loop asks questions and writes answers directly into your files, refining them in place. The end result is the same file you wrote — now unambiguous enough for Claude Code, Cursor, or Copilot to read and generate code from. TypeScript types are generated internally for verification only. **The authoritative design reference is [`docs/DESIGN.md`](./docs/DESIGN.md).** `verbo check` is live: LLM extraction with a repair loop (Phase 1), the type generator (Phase 2), and constraint assertions in `.verbo/validate.ts` (Phase 3). `verbo interview` is live (Phase 4): it reads `clarifications.json`, resolves ambiguities interactively, writes answers back into the spec `.md` files, records an audit trail under `.verbo/clarifications/`, and supports `--recheck` to re-run clarify and report remaining ambiguities. DeepSeek is supported as an AI provider (`-a deepseek`, `deepseek-v4-flash`).
+> **Status (2026 redesign):** Verbo has pivoted from code generation to
+> **specification engineering**. You write loose Markdown. Verbo's interview
+> loop asks questions and writes answers directly into your files, refining them
+> in place. The end result is the same file you wrote — now unambiguous enough
+> for Claude Code, Cursor, or Copilot to read and generate code from. TypeScript
+> types are generated internally for verification only. **The authoritative
+> design reference is [`docs/DESIGN.md`](./docs/DESIGN.md).** `verbo check` is
+> live: LLM extraction with a repair loop (Phase 1), the type generator (Phase
+> 2), and constraint assertions in `.verbo/validate.ts` (Phase 3).
+> `verbo interview` is live (Phase 4): it reads `clarifications.json`, resolves
+> ambiguities interactively, writes answers back into the spec `.md` files,
+> records an audit trail under `.verbo/clarifications/`, and supports
+> `--recheck` to re-run clarify and report remaining ambiguities. DeepSeek is
+> supported as an AI provider (`-a deepseek`, `deepseek-v4-flash`).
 
 ## Table of Contents
 
@@ -55,14 +71,21 @@ Relationships:
 - A class can have multiple students.
 ```
 
-No special syntax. No annotations. Just the way you'd explain your models to a teammate.
+No special syntax. No annotations. Just the way you'd explain your models to a
+teammate.
 
 When you run `verbo check`, Verbo:
 
-1. **Extracts** structure from your prose using an LLM — types, constraints, relationships.
-2. **Validates internally** — generates TypeScript types and constraint assertions, runs `deno check`. Failures feed back to the LLM for correction.
-3. **Runs clarify** — an AI-powered pass that finds vague language, imprecise declarations, contradictions, and missing definitions.
-4. **Offers interview** — interactive collaborator that asks questions, proposes precision improvements, and writes your answers directly into your `.md` files. Each round makes the file more precise. Add `--recheck` to re-run clarify afterwards and see how many ambiguities remain.
+1. **Extracts** structure from your prose using an LLM — types, constraints,
+   relationships.
+2. **Validates internally** — generates TypeScript types and constraint
+   assertions, runs `deno check`. Failures feed back to the LLM for correction.
+3. **Runs clarify** — an AI-powered pass that finds vague language, imprecise
+   declarations, contradictions, and missing definitions.
+4. **Offers interview** — interactive collaborator that asks questions, proposes
+   precision improvements, and writes your answers directly into your `.md`
+   files. Each round makes the file more precise. Add `--recheck` to re-run
+   clarify afterwards and see how many ambiguities remain.
 
 ## How it works
 
@@ -70,30 +93,67 @@ Verbo has two layers:
 
 ### LLM-powered extraction
 
-An LLM reads your natural language specs and extracts structured data — model names, properties, types, constraints, and relationships. No parser to maintain. No syntax to learn. The LLM handles the variation in how people describe things.
+An LLM reads your natural language specs and extracts structured data — model
+names, properties, types, constraints, and relationships. No parser to maintain.
+No syntax to learn. The LLM handles the variation in how people describe things.
 
-If the extraction produces types that fail `deno check`, the errors are fed back to the LLM in a **repair loop** (max 3 retries). This is what makes LLM-based extraction reliable.
+If the extraction produces types that fail `deno check`, the errors are fed back
+to the LLM in a **repair loop** (max 3 retries). This is what makes LLM-based
+extraction reliable.
 
 ### Deterministic validation
 
-- **`deno check`** validates the generated type graph — catches undefined references, circular types, type mismatches.
-- **`.verbo/validate.ts`** checks value-level constraints (ranges, required fields, positive values) that TypeScript can't express.
+- **`deno check`** validates the generated type graph — catches undefined
+  references, circular types, type mismatches.
+- **`.verbo/validate.ts`** checks value-level constraints (ranges, required
+  fields, positive values) that TypeScript can't express.
 
 ### AI-assisted clarification
 
-- **Clarify** — one LLM call finds vagueness, imprecise declarations, contradictions, and missing definitions in your prose.
-- **Interview** — an interactive collaborator. The LLM proposes precision improvements for ambiguous declarations (e.g., "product code: not empty" → "a unique string identifier, cannot be empty"). You accept, choose an alternative, or write your own. All changes are written back into your `.md` files with a full audit trail under `.verbo/clarifications/`. `interview --recheck` re-runs clarify afterwards so you know exactly how many ambiguities remain.
+- **Clarify** — one LLM call finds vagueness, imprecise declarations,
+  contradictions, and missing definitions in your prose.
+- **Interview** — an interactive collaborator. The LLM proposes precision
+  improvements for ambiguous declarations (e.g., "product code: not empty" → "a
+  unique string identifier, cannot be empty"). You accept, choose an
+  alternative, or write your own. All changes are written back into your `.md`
+  files with a full audit trail under `.verbo/clarifications/`.
+  `interview --recheck` re-runs clarify afterwards so you know exactly how many
+  ambiguities remain.
 
-The loop (extract → validate → clarify → interview → repeat) continues until your specs are clean.
+The loop (extract → validate → clarify → interview → repeat) continues until
+your specs are clean.
+
+## Interview tips
+
+- **Keep property bullets intact.** When a question targets a property bullet
+  (`- size: The size of the entry in bytes.`), answer with the property name
+  still attached — `size: always zero`. Verbo preserves the `name:` prefix
+  automatically if you drop it, but accepting the AI's proposal is the safest
+  path.
+- **Expect several rounds.** `clarify` finds deeper, more specific questions
+  each round (15 → 9 → 10 in the `ls` exercise); the count does not always
+  shrink. Stop when the remaining questions are below your risk tolerance, or
+  pass `--min-severity HIGH` to only chase CRITICAL/HIGH issues.
+- **Duplicates are trimmed.** If an answer repeats a phrase that already follows
+  the passage in the file, Verbo trims the trailing overlap instead of writing
+  it twice.
+- **Preview is interactive-only.** When you pipe answers (scripts/CI), the
+  write-back diff-preview confirmation is skipped automatically.
+- **Gate CI with `--fail-on`.** `verbo clarify --fail-on HIGH` (or
+  `verbo interview --recheck --fail-on HIGH`) exits 1 while questions at or
+  above that severity remain.
 
 ## Writing specs
 
-There's no required syntax. Write the way you'd explain your models to a teammate. Some conventions help the LLM extract better:
+There's no required syntax. Write the way you'd explain your models to a
+teammate. Some conventions help the LLM extract better:
 
 - **One model per file** — put each model in its own `models/` file.
 - **Use bullet points for properties** — `- name: description` patterns.
-- **Be explicit about ranges and constraints** — "9 to 12" is clearer than "a high school student."
-- **Name your relationships** — "A student can enroll in multiple classes" tells the LLM which models are connected.
+- **Be explicit about ranges and constraints** — "9 to 12" is clearer than "a
+  high school student."
+- **Name your relationships** — "A student can enroll in multiple classes" tells
+  the LLM which models are connected.
 - **Add a `main.md`** — gives the LLM project-level context.
 
 For a complete guide, see the [**design reference**](./docs/DESIGN.md).
@@ -126,7 +186,8 @@ deno run -A main.ts interview
 deno run -A main.ts interview --recheck
 ```
 
-You can run Verbo with your local AI using Ollama, or with Gemini, Anthropic, OpenAI, or DeepSeek (API key required). Create a `.env` file:
+You can run Verbo with your local AI using Ollama, or with Gemini, Anthropic,
+OpenAI, or DeepSeek (API key required). Create a `.env` file:
 
 ```
 GEMINI_KEY=...
@@ -161,4 +222,5 @@ A VS Code dev container is available at `.devcontainer/`.
 
 ## Roadmap
 
-See [docs/roadmap.md](./docs/roadmap.md), [docs/DESIGN.md](./docs/DESIGN.md), and the current milestone's [task list](./docs/tasks.md).
+See [docs/roadmap.md](./docs/roadmap.md), [docs/DESIGN.md](./docs/DESIGN.md),
+and the current milestone's [task list](./docs/tasks.md).
