@@ -9,6 +9,7 @@ import { deepseek } from "./src/api/deepseek.ts";
 import { createDirIfNotExists, getEnv } from "./src/utils.ts";
 import clarify from "./src/commands/clarify.ts";
 import { runCheck as runPipelineCheck } from "./src/check/pipeline.ts";
+import { runInterview as runInteractiveInterview } from "./src/interview/engine.ts";
 
 // --- Constants ---
 const VERSION = "0.1.0";
@@ -39,7 +40,7 @@ function printHelp(): void {
   console.log("Commands:");
   console.log("  check      Extract specs, generate types, validate with deno check");
   console.log("  clarify    Analyze specs for ambiguities using AI");
-  console.log("  interview  Resolve ambiguities interactively (stub — coming in Phase 4)");
+  console.log("  interview  Resolve spec ambiguities interactively and write answers back to the spec files");
   console.log("");
   console.log("Options:");
   console.log("  -h, --help              Display this help and exit");
@@ -86,14 +87,13 @@ async function runCheck(sourceDir: string, aiProvider: AiProviderFn): Promise<vo
   }
 }
 
-async function runInterview(sourceDir: string, _aiProvider: AiProviderFn): Promise<void> {
+async function runInterview(sourceDir: string, aiProvider: AiProviderFn): Promise<void> {
   createDirIfNotExists(`${sourceDir}/.verbo/clarifications`);
-  console.log("💬 Interactive interview mode");
-  console.log("");
-  console.log("  (Phase 4) Not yet implemented.");
-  console.log("  Will walk through severity-ordered questions and write answers back to .md files.");
-  console.log("");
-  console.log("💡 Run `verbo clarify` for passive ambiguity analysis.");
+  const result = await runInteractiveInterview({ sourceDir, aiProvider });
+  const touched = result.filesTouched.length;
+  console.log(
+    `\n✅ Interview complete: ${result.answered} answered, ${result.skipped} skipped, ${touched} file${touched === 1 ? "" : "s"} touched.`,
+  );
 }
 
 // --- Main Execution ---
