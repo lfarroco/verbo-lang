@@ -31,13 +31,13 @@ that passes `deno check` (extraction gate per DESIGN §15).
 
 ### B. Extraction
 
-- [ ] `src/extract/types.ts` — extracted-spec schema
+- [x] `src/extract/types.ts` — extracted-spec schema
   (`ExtractedSpec`, `Model`, `Property`, `Constraint`, `Relationship`)
-- [ ] `src/prompts/extract.md` — extraction prompt
+- [x] `src/prompts/extract.md` — extraction prompt
   - Type + constraint vocabulary; `{"models": [...]}` JSON envelope
   - Few-shot examples: classroom + todo fixtures
   - Repair round section (append `deno check` errors per DESIGN §6.2)
-- [ ] `src/extract/extractor.ts`
+- [x] `src/extract/extractor.ts`
   - `extract(corpus, aiProvider, repairErrors?)` — one LLM call
   - `parseExtraction(text)` — defensive parse/normalize (pure, testable)
   - Log prompt/response under `.verbo/extract/`
@@ -65,7 +65,8 @@ that passes `deno check` (extraction gate per DESIGN §15).
 - [ ] `test/classroom/` — `main.md`, `models/student.md`, `models/teacher.md`,
   `models/class.md` (README/DESIGN example; Phase 1 gate fixture)
 - [ ] `src/generator/types_test.ts` — generated TS assertions
-- [ ] `src/extract/extractor_test.ts` — parse/normalize cases
+- [x] `src/extract/extractor_test.ts` — parse/normalize cases
+  (created with Task B; 9 tests)
 - [ ] `src/check/pipeline_test.ts` — mocked AI + injected checker, retry logic
 - [ ] `.gitignore` — add `types.verbo.ts`
 - [ ] Docs: README/AI_README status notes (`check` real, DeepSeek provider)
