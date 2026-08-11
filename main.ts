@@ -1,4 +1,5 @@
 import { parseArgs } from "https://deno.land/std@0.224.0/cli/parse_args.ts";
+import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
 import { gemini } from "./src/api/gemini.ts";
 import { openai } from "./src/api/openai.ts";
@@ -9,7 +10,10 @@ import { deepseek } from "./src/api/deepseek.ts";
 import { createDirIfNotExists, getEnv } from "./src/utils.ts";
 import clarify from "./src/commands/clarify.ts";
 import { runCheck as runPipelineCheck } from "./src/check/pipeline.ts";
-import { runInterview as runInteractiveInterview } from "./src/interview/engine.ts";
+import {
+  parseClarifications,
+  runInterview as runInteractiveInterview,
+} from "./src/interview/engine.ts";
 
 // --- Constants ---
 const VERSION = "0.1.0";
@@ -50,6 +54,7 @@ function printHelp(): void {
   console.log("  -e, --envfile <path>    Path to .env file. Default: .env");
   console.log(`  -a, --aiprovider <name> AI provider (${VALID_PROVIDERS.join(", ")}). Default: ollama`);
   console.log("  -m, --model <name>      AI model to use. See provider for defaults.");
+  console.log("  -r, --recheck           After interview, re-run clarify and report remaining ambiguities.");
 }
 
 function getProvider(
@@ -87,13 +92,46 @@ async function runCheck(sourceDir: string, aiProvider: AiProviderFn): Promise<vo
   }
 }
 
-async function runInterview(sourceDir: string, aiProvider: AiProviderFn): Promise<void> {
+async function runInterview(
+  sourceDir: string,
+  aiProvider: AiProviderFn,
+  recheck: boolean,
+): Promise<void> {
   createDirIfNotExists(`${sourceDir}/.verbo/clarifications`);
   const result = await runInteractiveInterview({ sourceDir, aiProvider });
   const touched = result.filesTouched.length;
   console.log(
     `\n✅ Interview complete: ${result.answered} answered, ${result.skipped} skipped, ${touched} file${touched === 1 ? "" : "s"} touched.`,
   );
+
+  if (recheck) {
+    // Re-clarify the same dir (DESIGN §9.3) and report what remains.
+    console.log("\nRe-running clarify...");
+    await clarify({ sourceDir, aiProvider });
+
+    const clarificationsPath = join(sourceDir, "clarifications.json");
+    let remaining: number;
+    try {
+      remaining = parseClarifications(
+        Deno.readTextFileSync(clarificationsPath),
+      ).length;
+    } catch {
+      console.log(
+        "⚠️ Could not re-read clarifications.json — run `verbo clarify` manually to check remaining ambiguities.",
+      );
+      return;
+    }
+
+    if (remaining > 0) {
+      console.log(
+        `${remaining} ambiguity${remaining === 1 ? "" : "ies"} remain — run \`verbo interview\` again.`,
+      );
+    } else {
+      console.log("No remaining ambiguities — spec is clean ✨");
+    }
+  } else {
+    console.log("💡 Run `verbo clarify` again to check for remaining ambiguities.");
+  }
 }
 
 // --- Main Execution ---
@@ -107,8 +145,9 @@ export async function main(args: string[] = Deno.args): Promise<void> {
     alias: {
       "help": "h", "version": "V", "verbose": "v",
       "dir": "d", "envfile": "e", "aiprovider": "a", "model": "m",
+      "recheck": "r",
     },
-    boolean: ["help", "verbose", "version"],
+    boolean: ["help", "verbose", "version", "recheck"],
     string: ["dir", "envfile", "aiprovider", "model"],
     default: {
       dir: "./", envfile: ".env", aiprovider: "ollama",
@@ -154,7 +193,7 @@ export async function main(args: string[] = Deno.args): Promise<void> {
         await clarify({ sourceDir, aiProvider });
         break;
       case "interview":
-        await runInterview(sourceDir, aiProvider);
+        await runInterview(sourceDir, aiProvider, options.recheck === true);
         break;
       default:
         console.error(`Error: Unknown command "${command}".`);

@@ -124,9 +124,34 @@ that passes `deno check` (extraction gate per DESIGN §15), and the generated
   `-a deepseek -m deepseek-v4-flash`; throwaway runners under each
   `.verbo/gate-violations.ts`, gitignored)
 
+### H. Interview (Phase 4)
+
+- [x] `src/interview/engine.ts` — `runInterview({ sourceDir, aiProvider })`
+  reads `clarifications.json` (defensive parse, see `parseClarifications`),
+  presents questions severity-ordered (CRITICAL → HIGH → MEDIUM, stable per
+  severity per DESIGN §9.2), and resolves them interactively (`ask`/`log`
+  injectable for tests; EOF-safe for piped stdin)
+- [x] `src/prompts/interview.md` — proposal prompt template: the LLM proposes a
+  more precise rewrite of the exact ambiguous passage
+- [x] Write-back: accepted proposals / numbered options / custom answers replace
+  the `context` passage in the `.md` files in place (`applyAnswer`, DESIGN §9);
+  skips and missing files are recorded but leave the file untouched
+- [x] Audit trail under `.verbo/clarifications/` — `interview-<session>.jsonl`
+  decision log + `interview-log.md` summary (DESIGN §12)
+- [x] `main.ts` — `verbo interview` wired to the engine; `--recheck` boolean
+  option (`-r`) re-runs clarify on the same dir after the round and reports how
+  many ambiguities remain (DESIGN §9.3)
+- [x] `src/commands/clarify.ts` — outputs (`clarifications.json`, prompt/log
+  artifacts) now written under `sourceDir` instead of the CWD, so
+  `--recheck`/interview read the right file and artifacts stay with the project
+- [x] `src/interview/engine_test.ts` + `types.ts` — parse/normalize, severity
+  ordering, and decision handling unit tests (part of the 36)
+- [x] End-to-end verified with DeepSeek (`-a deepseek -m deepseek-v4-flash`) on
+  a scratch `test/e2e-interview` copy of the `guild` fixture (removed after the
+  run): clarify → interview (all answers accepted) → `--recheck` re-clarify loop
+
 ---
 
 ## Deferred (later milestones, per DESIGN §15)
 
-- Phase 4 — interactive interview with write-back + audit trail
 - Phase 5 — CLI polish (`check`/`interview` help), CI

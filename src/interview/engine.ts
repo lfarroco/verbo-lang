@@ -197,6 +197,21 @@ function isOptionNumber(input: string, count: number): boolean {
 
 // --- Default interactive pieces ---
 
+// `Deno.stdin.readable` can only be piped once — build the line reader lazily
+// and reuse it across questions so piped answers (e.g. `printf '1\n1\n...' |`)
+// are consumed one line at a time instead of EOF-ing after the first question.
+let stdinReader: ReadableStreamDefaultReader<string> | null = null;
+
+function getStdinLineReader(): ReadableStreamDefaultReader<string> {
+  if (stdinReader === null) {
+    stdinReader = Deno.stdin.readable
+      .pipeThrough(new TextDecoderStream())
+      .pipeThrough(new TextLineStream())
+      .getReader();
+  }
+  return stdinReader;
+}
+
 /** Default `ask`: print the message and read one line from stdin. */
 async function defaultAsk(message: string): Promise<string> {
   const writer = Deno.stdout.writable.getWriter();
@@ -206,18 +221,12 @@ async function defaultAsk(message: string): Promise<string> {
     writer.releaseLock();
   }
 
-  const reader = Deno.stdin.readable
-    .pipeThrough(new TextDecoderStream())
-    .pipeThrough(new TextLineStream())
-    .getReader();
   try {
-    const { value } = await reader.read();
+    const { value } = await getStdinLineReader().read();
     if (value === undefined) return "s"; // EOF → skip
     return value;
   } catch {
     return "s";
-  } finally {
-    reader.releaseLock();
   }
 }
 

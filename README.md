@@ -2,7 +2,7 @@
 
 A specification engineering tool. Describe data models in loose natural language. Verbo interviews you to resolve ambiguity, writing each answer back into your files — the same `.md` becomes progressively more precise until it's ready for an AI coding tool to consume.
 
-> **Status (2026 redesign):** Verbo has pivoted from code generation to **specification engineering**. You write loose Markdown. Verbo's interview loop asks questions and writes answers directly into your files, refining them in place. The end result is the same file you wrote — now unambiguous enough for Claude Code, Cursor, or Copilot to read and generate code from. TypeScript types are generated internally for verification only. **The authoritative design reference is [`docs/DESIGN.md`](./docs/DESIGN.md).** `verbo check` is live: LLM extraction with a repair loop (Phase 1), the type generator (Phase 2), and constraint assertions in `.verbo/validate.ts` (Phase 3). `verbo interview` is still a stub (Phase 4). DeepSeek is supported as an AI provider (`-a deepseek`, `deepseek-v4-flash`).
+> **Status (2026 redesign):** Verbo has pivoted from code generation to **specification engineering**. You write loose Markdown. Verbo's interview loop asks questions and writes answers directly into your files, refining them in place. The end result is the same file you wrote — now unambiguous enough for Claude Code, Cursor, or Copilot to read and generate code from. TypeScript types are generated internally for verification only. **The authoritative design reference is [`docs/DESIGN.md`](./docs/DESIGN.md).** `verbo check` is live: LLM extraction with a repair loop (Phase 1), the type generator (Phase 2), and constraint assertions in `.verbo/validate.ts` (Phase 3). `verbo interview` is live (Phase 4): it reads `clarifications.json`, resolves ambiguities interactively, writes answers back into the spec `.md` files, records an audit trail under `.verbo/clarifications/`, and supports `--recheck` to re-run clarify and report remaining ambiguities. DeepSeek is supported as an AI provider (`-a deepseek`, `deepseek-v4-flash`).
 
 ## Table of Contents
 
@@ -62,7 +62,7 @@ When you run `verbo check`, Verbo:
 1. **Extracts** structure from your prose using an LLM — types, constraints, relationships.
 2. **Validates internally** — generates TypeScript types and constraint assertions, runs `deno check`. Failures feed back to the LLM for correction.
 3. **Runs clarify** — an AI-powered pass that finds vague language, imprecise declarations, contradictions, and missing definitions.
-4. **Offers interview** — interactive collaborator that asks questions and writes answers directly into your `.md` files. Each round makes the file more precise.
+4. **Offers interview** — interactive collaborator that asks questions, proposes precision improvements, and writes your answers directly into your `.md` files. Each round makes the file more precise. Add `--recheck` to re-run clarify afterwards and see how many ambiguities remain.
 
 ## How it works
 
@@ -82,7 +82,7 @@ If the extraction produces types that fail `deno check`, the errors are fed back
 ### AI-assisted clarification
 
 - **Clarify** — one LLM call finds vagueness, imprecise declarations, contradictions, and missing definitions in your prose.
-- **Interview** — an interactive collaborator. The LLM proposes precision improvements for ambiguous declarations (e.g., "product code: not empty" → "a unique string identifier, cannot be empty"). You accept, choose an alternative, or write your own. All changes are written back into your `.md` files with a full audit trail.
+- **Interview** — an interactive collaborator. The LLM proposes precision improvements for ambiguous declarations (e.g., "product code: not empty" → "a unique string identifier, cannot be empty"). You accept, choose an alternative, or write your own. All changes are written back into your `.md` files with a full audit trail under `.verbo/clarifications/`. `interview --recheck` re-runs clarify afterwards so you know exactly how many ambiguities remain.
 
 The loop (extract → validate → clarify → interview → repeat) continues until your specs are clean.
 
@@ -121,6 +121,9 @@ deno run -A main.ts clarify
 
 # Resolve ambiguities interactively
 deno run -A main.ts interview
+
+# Resolve ambiguities, then re-run clarify to check for remaining ones
+deno run -A main.ts interview --recheck
 ```
 
 You can run Verbo with your local AI using Ollama, or with Gemini, Anthropic, OpenAI, or DeepSeek (API key required). Create a `.env` file:

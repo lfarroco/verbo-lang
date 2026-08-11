@@ -28,7 +28,7 @@ Verbo does NOT generate application code. It validates specifications. The outpu
 - `src/extract/`: Extraction orchestrator with repair loop (`types.ts`, `extractor.ts`).
 - `src/generator/`: TypeScript type generator (`types.ts`) and constraint assertion generator (`assertions.ts` → `.verbo/validate.ts`).
 - `src/check/`: `verbo check` pipeline wiring extract → generate → `deno check` → repair.
-- `src/interview/` *(planned)*: Interactive interview engine with write-back.
+- `src/interview/`: Interactive interview engine with write-back (`engine.ts`, `types.ts`) — reads `clarifications.json`, resolves ambiguities severity-ordered, writes answers back into the `.md` files, and records an audit trail under `.verbo/clarifications/`.
 - `docs/`: `DESIGN.md` (authoritative), plus historical docs.
 - `test/`: Fixture specs — `classroom/`, `guild/`, and `todo/` (plain `.md` files with no special syntax).
 
@@ -50,7 +50,7 @@ Verbo does NOT generate application code. It validates specifications. The outpu
 2. **Extract (LLM + repair loop):** One LLM call extracts structured data from prose. Generate `types.verbo.ts`. Run `deno check`. On failure, feed errors back to the LLM (max 3 retries).
 3. **Generate assertions (deterministic):** `.verbo/validate.ts` checks value-level constraints.
 4. **Clarify (LLM):** Find ambiguities — vague terms, contradictions, undefined concepts.
-5. **Interview (interactive):** Resolve ambiguities with write-back to `.md`, audited under `.verbo/clarifications/`.
+5. **Interview (interactive):** Resolve ambiguities with write-back to `.md`, audited under `.verbo/clarifications/`. `--recheck` re-runs clarify and reports remaining ambiguities.
 6. **Re-extract, re-clarify:** Loop until clean.
 
 ## 5. Technology Stack
@@ -62,13 +62,13 @@ Verbo does NOT generate application code. It validates specifications. The outpu
 
 ## 6. Project Goals & Roadmap
 
-- **Current Status:** Pivoted from code generation to specification engineering. Old codegen code removed. `verbo check` is real: LLM extraction with a repair loop (Phase 1) + type generator (Phase 2) + constraint assertion generator (Phase 3), verified end-to-end with the DeepSeek provider (`deepseek-v4-flash`). `clarify` works; `interview` is a stub. Building toward the design in `docs/DESIGN.md`.
-- **Phases:** Cleanup (✓ done) → Extraction + repair loop (✓) → Type generator (✓) → Assertion generator (✓) → Interview (4) → CLI polish (5).
+- **Current Status:** Pivoted from code generation to specification engineering. Old codegen code removed. `verbo check` is real: LLM extraction with a repair loop (Phase 1) + type generator (Phase 2) + constraint assertion generator (Phase 3), verified end-to-end with the DeepSeek provider (`deepseek-v4-flash`). `clarify` and `interview` are real (Phase 4): `interview` reads `clarifications.json`, resolves ambiguities interactively with write-back to the `.md` files, records an audit trail under `.verbo/clarifications/`, and `interview --recheck` re-runs clarify and reports remaining ambiguities. Building toward the design in `docs/DESIGN.md`.
+- **Phases:** Cleanup (✓ done) → Extraction + repair loop (✓) → Type generator (✓) → Assertion generator (✓) → Interview (✓) → CLI polish (5).
 
 ## 7. How to Assist
 
 - **Read the design first:** `docs/DESIGN.md` is authoritative.
 - **To understand the spec format:** Refer to `test/guild/models/*.md` — these are plain Markdown with NO special syntax. The user writes natural language. The LLM does the extraction.
 - **When generating Verbo specs:** Write plain, descriptive Markdown — the way you'd explain models to a teammate. No backtick-quoted types, no constraint annotations, no directives. Be explicit but natural.
-- **When working on the tool:** Next up is Phase 3 (constraint assertion generator, `.verbo/validate.ts`) and Phase 4 (interactive interview with write-back + audit trail). Do NOT build a parser or add syntax conventions.
+- **When working on the tool:** Next up is Phase 5 (CLI polish and CI). Do NOT build a parser or add syntax conventions.
 - **Never generate codegen infrastructure:** No SQL, no route handlers, no API scaffolding.
