@@ -26,7 +26,7 @@ Verbo does NOT generate application code. It validates specifications. The outpu
 - `src/api/`: Thin provider adapters (Ollama, Gemini, OpenAI, Anthropic, DeepSeek).
 - `src/prompts/`: LLM prompt templates (`clarify.md`, `extract.md`).
 - `src/extract/`: Extraction orchestrator with repair loop (`types.ts`, `extractor.ts`).
-- `src/generator/`: TypeScript type generator (`types.ts`; constraint assertions are Phase 3).
+- `src/generator/`: TypeScript type generator (`types.ts`) and constraint assertion generator (`assertions.ts` → `.verbo/validate.ts`).
 - `src/check/`: `verbo check` pipeline wiring extract → generate → `deno check` → repair.
 - `src/interview/` *(planned)*: Interactive interview engine with write-back.
 - `docs/`: `DESIGN.md` (authoritative), plus historical docs.
@@ -62,8 +62,8 @@ Verbo does NOT generate application code. It validates specifications. The outpu
 
 ## 6. Project Goals & Roadmap
 
-- **Current Status:** Pivoted from code generation to specification engineering. Old codegen code removed. `verbo check` is real: LLM extraction with a repair loop (Phase 1) + type generator (Phase 2), verified end-to-end with the DeepSeek provider (`deepseek-v4-flash`). `clarify` works; `interview` is a stub. Building toward the design in `docs/DESIGN.md`.
-- **Phases:** Cleanup (✓ done) → Extraction + repair loop (✓) → Type generator (✓) → Assertion generator (3) → Interview (4) → CLI polish (5).
+- **Current Status:** Pivoted from code generation to specification engineering. Old codegen code removed. `verbo check` is real: LLM extraction with a repair loop (Phase 1) + type generator (Phase 2) + constraint assertion generator (Phase 3), verified end-to-end with the DeepSeek provider (`deepseek-v4-flash`). `clarify` works; `interview` is a stub. Building toward the design in `docs/DESIGN.md`.
+- **Phases:** Cleanup (✓ done) → Extraction + repair loop (✓) → Type generator (✓) → Assertion generator (✓) → Interview (4) → CLI polish (5).
 
 ## 7. How to Assist
 

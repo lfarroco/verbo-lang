@@ -11,7 +11,8 @@
   "test": {
     "permissions": {
       "read": true,
-      "write": true
+      "write": true,
+      "run": true
     }
   },
   "unstable": [

@@ -1,4 +1,4 @@
-# Verbo Task List — Phase 1 + Phase 2 (`verbo check`)
+# Verbo Task List — Phases 1–3 (`verbo check`)
 
 > Granular task breakdown for the current milestone. Phase summary lives in
 > [`docs/roadmap.md`](./roadmap.md); the authoritative design is
@@ -7,12 +7,15 @@
 ## Milestone
 
 Implement the `verbo check` pipeline — **LLM extraction with repair loop**
-(DESIGN Phase 1) + **type generator** (Phase 2) — wired into the CLI, plus a
-**DeepSeek provider** so the pipeline can be verified end-to-end with
-`deepseek-v4-flash` (key already in `.env`).
+(DESIGN Phase 1) + **type generator** (Phase 2) + **constraint assertion
+generator** (Phase 3) — wired into the CLI, plus a **DeepSeek provider** so the
+pipeline can be verified end-to-end with `deepseek-v4-flash` (key already in
+`.env`).
 
 **Gate:** `verbo check` on `test/classroom/` produces a valid `types.verbo.ts`
-that passes `deno check` (extraction gate per DESIGN §15).
+that passes `deno check` (extraction gate per DESIGN §15), and the generated
+`.verbo/validate.ts` assertions catch deliberate violations in the fixtures
+(Phase 3 gate per DESIGN §15).
 
 ---
 
@@ -93,10 +96,37 @@ that passes `deno check` (extraction gate per DESIGN §15).
   existing clarify command
 - [x] `./dev test` → all unit tests green
 
+### G. Assertion generator (Phase 3)
+
+- [x] `src/generator/assertions.ts` — pure `generateAssertions(spec): string`
+  producing `.verbo/validate.ts` (DESIGN §8)
+  - Per constrained property: `assert_<Model>_<prop>(value, source)` that
+    throws on violation (§8.2 shape); multiple constraints on one property are
+    merged into a single function
+  - Per model: `validate<Model>(value): string[]` returning violation messages
+    (empty when clean) — runnable for `deno run` / CI (§12 consumer)
+  - Constraint mapping: `range` → `< min || > max`, `minimum`/`maximum` →
+    bounds, `positive` → `<= 0`, `required` → `value === undefined || null`,
+    `format` → non-empty string, `enum` → membership check
+  - Type-safe by construction: numeric/enum/format constraints only apply to
+    scalar `string`/`number` properties; `required` uses `unknown` (+casts when
+    merged with typed checks) so the output always passes `deno check`
+- [x] `src/generator/assertions_test.ts` — 6 tests: classroom output, merged
+  constraints, required-through-`unknown`, incompatible-constraint skipping,
+  header-only output, and a `deno check` integration test on generated output
+- [x] `src/check/pipeline.ts` — after `types.verbo.ts` passes `deno check`,
+  write `.verbo/validate.ts` (create `.verbo/` dir) and `deno check` it too
+  (`runDenoCheck` failure here is a generator bug, not LLM-repairable)
+- [x] `deno.json` — add `run` to `test.permissions` (assertion integration test
+  spawns `deno check`)
+- [x] Phase 3 gate (DESIGN §15): deliberate violations in `test/classroom/`,
+  `test/todo/`, `test/guild/` caught by generated assertions (verified with
+  `-a deepseek -m deepseek-v4-flash`; throwaway runners under each
+  `.verbo/gate-violations.ts`, gitignored)
+
 ---
 
 ## Deferred (later milestones, per DESIGN §15)
 
-- Phase 3 — constraint assertion generator (`.verbo/validate.ts`)
 - Phase 4 — interactive interview with write-back + audit trail
 - Phase 5 — CLI polish (`check`/`interview` help), CI

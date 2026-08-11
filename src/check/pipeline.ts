@@ -1,9 +1,10 @@
 import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
-import { extract, type AiProvider } from "../extract/extractor.ts";
+import { type AiProvider, extract } from "../extract/extractor.ts";
 import type { ExtractedSpec } from "../extract/types.ts";
+import { generateAssertions } from "../generator/assertions.ts";
 import { generateTypes } from "../generator/types.ts";
-import { aggregateFilesForPrompt } from "../utils.ts";
+import { aggregateFilesForPrompt, createDirIfNotExists } from "../utils.ts";
 
 export const MAX_REPAIR_ROUNDS = 3;
 
@@ -58,7 +59,9 @@ export async function runCheck(options: RunCheckOptions): Promise<CheckResult> {
   }
 
   const errors = extractErrors(check.stderr);
-  console.error("\n❌ All extraction attempts failed. Final deno check errors:");
+  console.error(
+    "\n❌ All extraction attempts failed. Final deno check errors:",
+  );
   for (const error of errors) console.error(`   - ${error}`);
   return { ok: false, attempts: MAX_REPAIR_ROUNDS + 1, errors };
 }
@@ -68,10 +71,21 @@ async function generateAndCheck(
   sourceDir: string,
   checkFile: RunDenoCheck,
 ): Promise<DenoCheckResult> {
+  // 1. Types — if these fail, the repair loop feeds the errors back to the LLM.
   const outputPath = join(sourceDir, "types.verbo.ts");
   Deno.writeTextFileSync(outputPath, generateTypes(spec));
   console.log(`Generated ${outputPath}`);
-  return checkFile(outputPath);
+  const typesCheck = await checkFile(outputPath);
+  if (!typesCheck.ok) return typesCheck;
+
+  // 2. Value-level assertions — deterministic from the extracted constraints;
+  //    a failure here is a generator bug, not something the LLM can repair.
+  const verifyDir = join(sourceDir, ".verbo");
+  createDirIfNotExists(verifyDir);
+  const validatePath = join(verifyDir, "validate.ts");
+  Deno.writeTextFileSync(validatePath, generateAssertions(spec));
+  console.log(`Generated ${validatePath}`);
+  return checkFile(validatePath);
 }
 
 /** Real `deno check` subprocess on the generated types file. */
