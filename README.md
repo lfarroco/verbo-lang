@@ -5,20 +5,12 @@ language. Verbo interviews you to resolve ambiguity, writing each answer back
 into your files — the same `.md` becomes progressively more precise until it's
 ready for an AI coding tool to consume.
 
-> **Status (2026 redesign):** Verbo has pivoted from code generation to
-> **specification engineering**. You write loose Markdown. Verbo's interview
-> loop asks questions and writes answers directly into your files, refining them
-> in place. The end result is the same file you wrote — now unambiguous enough
-> for Claude Code, Cursor, or Copilot to read and generate code from. TypeScript
-> types are generated internally for verification only. **The authoritative
-> design reference is [`docs/DESIGN.md`](./docs/DESIGN.md).** `verbo check` is
-> live: LLM extraction with a repair loop (Phase 1), the type generator (Phase
-> 2), and constraint assertions in `.verbo/validate.ts` (Phase 3).
-> `verbo interview` is live (Phase 4): it reads `clarifications.json`, resolves
-> ambiguities interactively, writes answers back into the spec `.md` files,
-> records an audit trail under `.verbo/clarifications/`, and supports
-> `--recheck` to re-run clarify and report remaining ambiguities. DeepSeek is
-> supported as an AI provider (`-a deepseek`, `deepseek-v4-flash`).
+You write loose Markdown. Verbo's interview loop asks questions and writes
+answers directly into your files, refining them in place. The end result is
+the same file you wrote, now unambiguous enough for Claude Code, Cursor,
+or Copilot to read and generate code from. TypeScript types are generated
+internally for verification only.
+
 
 ## Table of Contents
 
