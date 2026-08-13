@@ -1,4 +1,4 @@
-# Verbo Task List — Phases 1–3 (`verbo check`)
+# Verbo Task List — Phases 1–5 (`verbo check` → CLI polish)
 
 > Granular task breakdown for the current milestone. Phase summary lives in
 > [`docs/roadmap.md`](./roadmap.md); the authoritative design is
@@ -218,3 +218,89 @@ that passes `deno check` (extraction gate per DESIGN §15), and the generated
 - [x] **T14. Never aggregate Verbo's own artifacts** — `listFilesAt` skips
       dot-directories (`.verbo`, `.git`), so the clarify audit trail (Markdown)
       can no longer pollute `check`/`clarify` corpora.
+
+---
+
+## Phase 5 — High-priority improvements
+
+> Surfaced by the relationships-as-properties code review: cross-model
+> references are now regular properties (`Teacher` / `Class[]`), and
+> `Relationship`/`RelationshipKind` were removed from the extracted spec
+> (`src/extract/types.ts`). Authoritative design:
+> [`docs/DESIGN.md`](./DESIGN.md). Source of evidence for each task is noted in
+> the task body. All items below are **pending** (`[ ]`).
+
+### 1. Correctness: enum + array, generator consistency
+
+- [ ] **H1. Enum constraint on an array property drops the `[]` in generated
+      types** — `{name:"tags", type:"string[]", constraints:[{kind:"enum",
+      values:["a","b"]}]}` renders `tags: TodoTags;` instead of `TodoTags[]`.
+      `renderModel` in `src/generator/types.ts` picks the enum union for any
+      property with an enum constraint regardless of `type`. Verified
+      empirically 2026-08. Decide: per-element enum (`TodoTags[]`, with
+      assertions checking each element) or skip enums on non-scalars
+      everywhere; then make the type generator and `src/generator/assertions.ts`
+      (`applicableConstraints`, which already skips non-scalar enums) agree.
+- [ ] **H2. Regression tests for H1 + the new property model** — parse →
+      generate → `deno check` with an enum-on-array fixture; plus the
+      currently-untested `optional` model reference (`assignee?: User`, verified
+      working) and a to-many reference (`classes: Class[]`) end-to-end.
+
+### 2. Remove codegen-era leftovers
+
+- [ ] **H3. Stale docs contradict the current direction** —
+      `docs/feature_clarification_mode.md` ("AI compiler", "Proceed to Code
+      Generation", `verbo compile --target=sql`) and
+      `docs/scaffolding_interview.md` ("Generate CLI/API/AI Agent Boilerplate")
+      describe the pre-2026 codegen world and carry no "superseded" banner
+      (unlike `docs/roadmap.md`). `AI_README.md` points assistants at the repo,
+      so stale docs actively mislead. Delete or banner-mark.
+- [ ] **H4. Dead Makefile targets** — `test-gemini`/`test-anthropic`/
+      `test-openai`/`test-ollama`/`test-react`/`test-function`/`test-sql`/
+      `test-models`/`test-db-client`/`test-routes`/`scaffold`/`run-db` reference
+      removed artifacts (`node dist/index.js`, `templates/`,
+      `test/guild/results/init.sql`, `test/todo/dist`). Prune to the `dev-*`
+      Docker targets.
+
+### 3. Extraction hardening (relationships-as-properties era)
+
+- [ ] **H5. Type-vocabulary validation in `parseExtraction`** —
+      `normalizeProperty` (`src/extract/extractor.ts`) accepts any non-empty
+      `type`; garbage ("`strng`", "`Class{}`") only surfaces later as `deno
+      check` "Cannot find name" and costs a repair round. Validate `type` ∈
+      {string, number, boolean, date} | `base[]` | PascalCase model name. Not a
+      deterministic parser (DESIGN §4) — validation of the LLM's JSON envelope,
+      in the spirit of "verification catches mistakes".
+- [ ] **H6. `_many` naming convention needs a few-shot example** —
+      `src/prompts/extract.md` documents `<ModelName>_many` (`syllabus_many`)
+      but no JSON example demonstrates it, so the LLM may never produce it. Add
+      one tiny reference example (e.g. a `Syllabus` reference).
+- [ ] **H7. Cover the new property model in tests** — after the refactor:
+      model-reference + `optional`, stray `relationships` key ignored (already
+      covered by `src/extract/extractor_test.ts`), to-many reference through
+      parse → generate → `deno check` (partially covered by
+      `pipeline_ls_test`).
+
+### 4. UX / DX
+
+- [ ] **H8. `verbo check` should summarize the extraction** — `runCheck`
+      (`src/check/pipeline.ts`) prints the generated files but never what was
+      extracted. `spec` is already in scope, so print e.g.
+      `Extracted 3 models — Student, Teacher, Class (16 properties, 5 model
+      references)` after the first attempt. Closes the "what did the tool see?"
+      loop.
+- [ ] **H9. fmt/lint debt blocks CI gating** — `deno lint`: 42 problems
+      (`require-await` in `src/interview/engine.ts`); `deno fmt --check`: 27
+      files (mostly markdown wrapping, pre-existing). One-time cleanup so
+      `dev-fmt-check`/`dev-lint` can gate CI.
+
+### 5. Lower priority / process
+
+- [ ] **H10. Vocabulary duplicated across docs** — type/constraint vocabulary
+      and extraction behavior are restated in 6 places (`src/prompts/extract.md`,
+      DESIGN §5/§6, VERBO_SPEC §2/§3, `tasks.md`, `AI_README.md`,
+      `specs-from-zero.md`) and already drifted once ("Relationships with
+      cardinality" survived in VERBO_SPEC after the refactor). Non-authoritative
+      docs should defer to DESIGN §5/§6.
+- [ ] **H11. Split `src/interview/engine.ts` (588 lines) / `main.ts` (343)** —
+      natural refactor when CLI polish lands.
