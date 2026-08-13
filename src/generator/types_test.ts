@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 
 import type { ExtractedSpec } from "../extract/types.ts";
 import { generateTypes } from "./types.ts";
@@ -188,7 +188,7 @@ Deno.test("generateTypes handles empty models, numeric enums and escaping", () =
           {
             name: "label",
             type: "string",
-            constraints: [{ kind: "enum", values: ["a\"b", "c"] }],
+            constraints: [{ kind: "enum", values: ['a"b', "c"] }],
           },
           { name: "history", type: "date[]" },
         ],
@@ -216,3 +216,86 @@ Deno.test("generateTypes handles empty models, numeric enums and escaping", () =
   assertEquals(generateTypes(spec), expected);
 });
 
+// H1 regression: an enum constraint on a non-scalar property must NOT swap the
+// property's type for the enum union. `string[]` keeps `string[]`, `number[]`
+// keeps `number[]`, a model reference keeps the reference — and no dangling
+// union type is emitted. The assertion generator skips non-scalar enums too
+// (shared `enumApplies` in src/generator/constraints.ts), so both agree.
+Deno.test("generateTypes keeps the element type on enum-constrained arrays and refs (H1)", () => {
+  const spec: ExtractedSpec = {
+    models: [{
+      name: "Todo",
+      properties: [
+        {
+          name: "tags",
+          type: "string[]",
+          constraints: [{ kind: "enum", values: ["urgent", "later"] }],
+        },
+        {
+          name: "ratings",
+          type: "number[]",
+          constraints: [{ kind: "enum", values: [1, 2, 3] }],
+        },
+        {
+          name: "owner",
+          type: "User",
+          constraints: [{ kind: "enum", values: ["a"] }],
+        },
+        // A scalar enum must still produce its union.
+        {
+          name: "status",
+          type: "string",
+          constraints: [{ kind: "enum", values: ["active", "completed"] }],
+        },
+      ],
+    }],
+  };
+
+  const out = generateTypes(spec);
+  assertStringIncludes(out, 'export type TodoStatus = "active" | "completed";');
+  // No union types may be emitted for the array/reference properties.
+  assertEquals(out.includes("TodoTags"), false);
+  assertEquals(out.includes("TodoRatings"), false);
+  assertEquals(out.includes("TodoOwner"), false);
+  // Element/reference types are preserved verbatim.
+  assertStringIncludes(out, "  tags: string[];");
+  assertStringIncludes(out, "  ratings: number[];");
+  assertStringIncludes(out, "  owner: User;");
+});
+
+// H1 integration: the enum-on-array output must be valid TS that `deno check`
+// accepts. Needs the `run` test permission (provided by `./dev test` / `-P`).
+Deno.test("generateTypes enum-on-array output passes deno check (H1)", async () => {
+  const spec: ExtractedSpec = {
+    models: [{
+      name: "Todo",
+      properties: [
+        {
+          name: "tags",
+          type: "string[]",
+          constraints: [{ kind: "enum", values: ["urgent", "later"] }],
+        },
+        {
+          name: "status",
+          type: "string",
+          constraints: [{ kind: "enum", values: ["active", "completed"] }],
+        },
+      ],
+    }],
+  };
+
+  const dir = Deno.makeTempDirSync({ prefix: "verbo-types-enum-array-" });
+  try {
+    Deno.writeTextFileSync(`${dir}/types.verbo.ts`, generateTypes(spec));
+    const cmd = new Deno.Command("deno", {
+      args: ["check", `${dir}/types.verbo.ts`],
+      stdout: "piped",
+      stderr: "piped",
+    });
+    const result = await cmd.output();
+    const stderr = new TextDecoder().decode(result.stderr);
+    assertEquals(result.success, true, stderr);
+  } finally {
+    Deno.removeSync(dir, { recursive: true });
+  }
+});

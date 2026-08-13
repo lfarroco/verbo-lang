@@ -1,4 +1,5 @@
 import type { ExtractedSpec, Model, Property } from "../extract/types.ts";
+import { enumApplies } from "./constraints.ts";
 
 /**
  * Pure type generator — turns an extracted spec into the text of
@@ -6,7 +7,10 @@ import type { ExtractedSpec, Model, Property } from "../extract/types.ts";
  *
  * Mapping rules:
  * - `date` → `Date`; primitives as-is; model refs → direct; `X[]` → `X[]`
- * - `enum` constraint → a `type X = "a" | "b";` union, referenced by the field
+ * - `enum` constraint on a scalar `string`/`number` property → a
+ *   `type X = "a" | "b";` union, referenced by the field; on arrays or model
+ *   references the enum is skipped and the element/reference type is kept
+ *   (a union would swallow the `[]` — see docs/tasks.md H1)
  * - `optional` → `?`
  * - a model reference property → that model's type (`Teacher`), or an array of
  *   references → `T[]` (`Class[]`)
@@ -72,6 +76,11 @@ function mapType(type: string): string {
 // --- Enums ---
 
 function enumValues(property: Property): (string | number)[] | undefined {
+  // Enum unions only apply to scalar string/number properties (H1). On array
+  // or model-reference types the union would replace `string[]` / `Teacher`
+  // with a single union type; both generators skip non-scalar enums via the
+  // shared `enumApplies` predicate so they can never drift again.
+  if (!enumApplies(property)) return undefined;
   return property.constraints?.find((c) => c.kind === "enum")?.values;
 }
 

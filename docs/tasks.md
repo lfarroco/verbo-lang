@@ -232,15 +232,20 @@ that passes `deno check` (extraction gate per DESIGN §15), and the generated
 
 ### 1. Correctness: enum + array, generator consistency
 
-- [ ] **H1. Enum constraint on an array property drops the `[]` in generated
+- [x] **H1. Enum constraint on an array property drops the `[]` in generated
       types** — `{name:"tags", type:"string[]", constraints:[{kind:"enum",
       values:["a","b"]}]}` renders `tags: TodoTags;` instead of `TodoTags[]`.
-      `renderModel` in `src/generator/types.ts` picks the enum union for any
-      property with an enum constraint regardless of `type`. Verified
-      empirically 2026-08. Decide: per-element enum (`TodoTags[]`, with
-      assertions checking each element) or skip enums on non-scalars
-      everywhere; then make the type generator and `src/generator/assertions.ts`
-      (`applicableConstraints`, which already skips non-scalar enums) agree.
+      **Decision: skip enums on non-scalars everywhere** (per-element enum
+      assertions are out of scope). The assertion generator's
+      `applicableConstraints` already skipped non-scalar enums, so the type
+      generator now agrees: `enumValues` (`src/generator/types.ts`) refuses
+      non-scalar `type`s, keeping `string[]`/`number[]` and model references
+      intact with no dangling union type. The shared predicate `enumApplies`
+      (`src/generator/constraints.ts`) is the single source of truth used by
+      both generators, so they cannot drift. Regression tests: enum on
+      `string[]`/`number[]`/model ref in `src/generator/types_test.ts` (incl.
+      a `deno check` integration test) and enum-on-array added to the
+      assertions skip test.
 - [ ] **H2. Regression tests for H1 + the new property model** — parse →
       generate → `deno check` with an enum-on-array fixture; plus the
       currently-untested `optional` model reference (`assignee?: User`, verified

@@ -195,6 +195,13 @@ Deno.test("generateAssertions skips constraints incompatible with the property t
           type: "number[]",
           constraints: [{ kind: "range", min: 0, max: 5 }],
         },
+        // enum on an array → not asserted (H1: both generators skip non-scalar
+        // enums via the shared enumApplies predicate)
+        {
+          name: "scores",
+          type: "number[]",
+          constraints: [{ kind: "enum", values: [1, 2, 3] }],
+        },
         // format on a boolean → not asserted
         {
           name: "ok",
@@ -218,6 +225,7 @@ Deno.test("generateAssertions skips constraints incompatible with the property t
   const out = generateAssertions(spec);
   assertStringIncludes(out, "assert_Mixed_label");
   assertEquals(out.includes("assert_Mixed_rating"), false);
+  assertEquals(out.includes("assert_Mixed_scores"), false);
   assertEquals(out.includes("assert_Mixed_ok"), false);
   assertEquals(out.includes("assert_Mixed_flag"), false);
   assertEquals(out.includes("assert_Mixed_when"), false);
