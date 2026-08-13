@@ -23,9 +23,6 @@ const classroom: ExtractedSpec = {
         },
         { name: "enrollmentDate", type: "date" },
       ],
-      relationships: [
-        { kind: "many-to-many", target: "Class", field: "classes" },
-      ],
     },
     {
       name: "Teacher",
@@ -40,9 +37,6 @@ const classroom: ExtractedSpec = {
         { name: "department", type: "string" },
         { name: "hireDate", type: "date" },
       ],
-      relationships: [
-        { kind: "one-to-many", target: "Class", field: "classes" },
-      ],
     },
     {
       name: "Class",
@@ -56,10 +50,6 @@ const classroom: ExtractedSpec = {
           type: "number",
           constraints: [{ kind: "range", min: 1, max: 30 }],
         },
-      ],
-      relationships: [
-        { kind: "many-to-one", target: "Teacher", field: "teacher" },
-        { kind: "one-to-many", target: "Student", field: "students" },
       ],
     },
   ],
@@ -125,7 +115,6 @@ Deno.test("generateAssertions merges multiple constraints into one assert functi
           constraints: [{ kind: "minimum", value: 1 }, { kind: "positive" }],
         },
       ],
-      relationships: [],
     }],
   };
 
@@ -168,7 +157,6 @@ Deno.test("generateAssertions types required through unknown and merges with typ
           }],
         },
       ],
-      relationships: [],
     }],
   };
 
@@ -224,7 +212,6 @@ Deno.test("generateAssertions skips constraints incompatible with the property t
         // required always applies
         { name: "label", type: "string", constraints: [{ kind: "required" }] },
       ],
-      relationships: [],
     }],
   };
 
@@ -242,7 +229,6 @@ Deno.test("generateAssertions emits only the header for specs without constraint
       name: "Empty",
       source: "models/empty.md",
       properties: [{ name: "name", type: "string" }],
-      relationships: [],
     }],
   };
 

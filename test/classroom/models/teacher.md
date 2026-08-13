@@ -8,7 +8,4 @@ Properties:
 - email: The teacher's school email address (must be valid).
 - department: The department the teacher belongs to.
 - hireDate: The date the teacher was hired.
-
-Relationships:
-
-- A teacher teaches multiple classes.
+- classes: The classes the teacher teaches.

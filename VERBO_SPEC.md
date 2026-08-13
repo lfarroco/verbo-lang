@@ -68,20 +68,22 @@ Embed constraints naturally in the description:
 
 The LLM normalizes these into structured constraints.
 
-### 2.4 Relationships
+### 2.4 Cross-model references
 
-Describe relationships in a dedicated section or inline with properties:
+A reference to another model is just a property — either a single one or a list:
 
 ```markdown
-Relationships:
+Properties:
 
-- A student can enroll in multiple classes.
-- A class is taught by one teacher.
-- A class can have multiple students.
-- A teacher can teach multiple classes.
+- classes: The classes the student is enrolled in.
+- teacher: The teacher who teaches the class.
 ```
 
-The LLM extracts cardinality (`has-many`, `belongs-to`) and target models from the prose.
+A single reference (`teacher`) becomes `Teacher`; a list (`classes`) becomes
+`Class[]`. Natural sentences also work — the LLM extracts the reference and the
+cardinality from prose like "A student can enroll in multiple classes." When a
+list reference has no natural plural, the deterministic convention is
+`<Model>_many` (e.g. `syllabus_many`).
 
 ### 2.5 Use a main.md
 
@@ -127,7 +129,7 @@ No syntax was added. The prose just got more explicit — now the LLM can extrac
 One LLM call reads all your `.md` files and extracts:
 - Model names and their source locations
 - Properties with names, types, and constraints
-- Relationships with cardinality and target models
+- Cross-model references — properties whose type is another model, single or `[]`
 - Cross-file references
 
 The extraction prompt includes few-shot examples from the classroom and todo fixtures.
@@ -220,10 +222,7 @@ Properties:
 - email: The student's school email address (must be valid).
 - gradeLevel: The student's grade level (9 to 12).
 - enrollmentDate: The date the student enrolled.
-
-Relationships:
-
-- A student can enroll in multiple classes.
+- classes: The classes the student is enrolled in.
 ```
 
 ### models/class.md
@@ -239,11 +238,8 @@ Properties:
 - subject: The subject of the class.
 - room: The room number where the class meets.
 - maxStudents: The maximum number of students (1 to 30).
-
-Relationships:
-
-- A class is taught by one teacher.
-- A class can have multiple students.
+- teacher: The teacher who teaches the class.
+- students: The students enrolled in the class.
 ```
 
 ### main.md
@@ -263,7 +259,7 @@ That's it. No syntax, no annotations — just the way you'd describe your models
 
 - **One model per file.** Helps the LLM know where each model begins and ends.
 - **Be explicit about constraints.** "9 to 12" is better than "a high school student." "Must be positive" is better than "a valid value."
-- **Name relationships explicitly.** "A student can enroll in multiple classes" names both the relationship and the target model.
+- **Describe cross-model references explicitly.** A property like `- classes: The classes the student is enrolled in.` names both the reference and the target model.
 - **Use a main.md.** Gives the LLM project-level context and improves extraction quality.
 - **Run clarify before finalizing.** The AI catches what you might miss — contradictions, missing models, vague terms.
 - **Iterate.** Write a first draft, run `verbo check`, review the generated types, refine your prose, repeat. The interview system is there for the hard questions.

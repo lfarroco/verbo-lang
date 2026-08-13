@@ -6,8 +6,6 @@ import type {
   ExtractedSpec,
   Model,
   Property,
-  Relationship,
-  RelationshipKind,
 } from "./types.ts";
 
 export type AiProvider = (prompt: string) => Promise<string>;
@@ -132,15 +130,7 @@ function normalizeModel(item: unknown): Model | null {
     }
   }
 
-  const relationships: Relationship[] = [];
-  if (Array.isArray(m.relationships)) {
-    for (const r of m.relationships) {
-      const relationship = normalizeRelationship(r);
-      if (relationship) relationships.push(relationship);
-    }
-  }
-
-  const model: Model = { name: m.name.trim(), properties, relationships };
+  const model: Model = { name: m.name.trim(), properties };
   if (typeof m.source === "string" && m.source.trim() !== "") {
     model.source = m.source.trim();
   }
@@ -199,32 +189,5 @@ function normalizeConstraint(item: unknown): Constraint | null {
     constraint.value = c.value;
   }
   return constraint;
-}
-
-const RELATIONSHIP_KINDS: readonly RelationshipKind[] = [
-  "one-to-one",
-  "one-to-many",
-  "many-to-one",
-  "many-to-many",
-];
-
-function normalizeRelationship(item: unknown): Relationship | null {
-  if (!item || typeof item !== "object") return null;
-  const r = item as Record<string, unknown>;
-  if (typeof r.target !== "string" || r.target.trim() === "") return null;
-
-  const kind = typeof r.kind === "string" &&
-      (RELATIONSHIP_KINDS as readonly string[]).includes(r.kind)
-    ? r.kind as RelationshipKind
-    : "one-to-many"; // default when the LLM leaves cardinality ambiguous
-
-  const relationship: Relationship = { kind, target: r.target.trim() };
-  if (typeof r.field === "string" && r.field.trim() !== "") {
-    relationship.field = r.field.trim();
-  }
-  if (typeof r.source === "string" && r.source.trim() !== "") {
-    relationship.source = r.source.trim();
-  }
-  return relationship;
 }
 

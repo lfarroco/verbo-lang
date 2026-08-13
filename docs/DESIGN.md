@@ -24,7 +24,7 @@ Primary descriptor: *"specification engineering for AI consumers."* The project 
 
 1. **Specification-only. No code generation.** Verbo validates specifications; it does not generate application code, API handlers, database schemas, or server scaffolding.
 2. **Natural language is the single source of truth.** Specs are plain `.md` files with no required syntax. Users write prose. The LLM extracts structure. If the user must write rigid syntax, Verbo has failed.
-3. **LLM as the extractor.** Structure (types, constraints, relationships) is extracted from natural language by an LLM with a repair loop. There is no deterministic parser.
+3. **LLM as the extractor.** Structure (types, constraints, cross-model references) is extracted from natural language by an LLM with a repair loop. There is no deterministic parser.
 4. **The `.md` file IS the output.** Clarification answers are written back into the same file. The end state is a precise, unambiguous spec — both human-readable documentation and AI-consumable specification. No separate output artifact.
 5. **TypeScript types as internal verification.** `types.verbo.ts` and `.verbo/validate.ts` are generated internally to validate the extraction. They prove correctness; they are not the product.
 6. **Extraction has a repair loop.** If `deno check` fails on generated types, the errors are fed back to the LLM for a corrected extraction (max 3 retries).
@@ -55,10 +55,7 @@ Properties:
 - email: The student's school email address (must be valid).
 - gradeLevel: The student's grade level (9 to 12).
 - enrollmentDate: The date the student enrolled.
-
-Relationships:
-
-- A student can enroll in multiple classes.
+- classes: The classes the student is enrolled in.
 ```
 
 This is plain prose. No syntax was added. The LLM extracts structure from it.
@@ -74,13 +71,17 @@ From the prose above, the extraction LLM produces structured data:
     { "name": "name", "type": "string", "constraints": [{ "kind": "required" }] },
     { "name": "email", "type": "string", "constraints": [{ "kind": "format", "value": "email" }] },
     { "name": "gradeLevel", "type": "number", "constraints": [{ "kind": "range", "min": 9, "max": 12 }] },
-    { "name": "enrollmentDate", "type": "date" }
-  ],
-  "relationships": [
-    { "kind": "many-to-many", "target": "Class" }
+    { "name": "enrollmentDate", "type": "date" },
+    { "name": "classes", "type": "Class[]" }
   ]
 }
 ```
+
+A reference to another model is a regular property — a single one (`"teacher":
+"Teacher"`) or a list (`"classes": "Class[]"`). There is no separate
+relationship construct. List names use a natural plural (`students`, `classes`)
+or the deterministic `<Model>_many` form (`syllabus_many`) when no plural reads
+well — never a mechanical "append s/es" rule.
 
 ### 5.2 Conventions that help the LLM
 
@@ -89,7 +90,7 @@ While there is no required syntax, some conventions improve extraction quality:
 - **One model per file** — helps the LLM know where one model ends and another begins.
 - **Property lists** — bullet points or numbered lists with `name: description` patterns.
 - **Explicit ranges and constraints** — "9 to 12" is clearer than "a high school student." "Must be valid" hints at format constraints.
-- **Named relationships** — "A student can enroll in multiple classes" names the target model and cardinality.
+- **Cross-model references** — describe how one model connects to others as a property that references them: a single one (`- teacher: The teacher who teaches the class.`) or a list (`- classes: The classes the student is enrolled in.`).
 - **A `main.md`** — gives the LLM project-level context.
 
 These are conventions, not rules. The LLM handles variation; the clarify system catches what it can't.
@@ -103,7 +104,7 @@ Extraction is a single LLM call (with retries) that takes the full spec corpus a
 The prompt (`src/prompts/extract.md`) instructs the LLM to extract:
 - Model names and source locations
 - Properties with names, types, and constraints
-- Relationships with cardinality and target models
+- Cross-model references — properties whose type is another model, single or `[]`
 - Cross-file references
 
 The prompt includes few-shot examples from the classroom and todo fixtures.
@@ -125,7 +126,7 @@ The prompt includes few-shot examples from the classroom and todo fixtures.
 
 - **Missed models** — the LLM skipped a file (e.g., `models/class.md` wasn't processed, causing "Cannot find name 'Class'").
 - **Wrong types** — the LLM inferred `string` for `gradeLevel` when the prose says "9 to 12."
-- **Missing relationships** — a property references another model but the relationship wasn't extracted.
+- **Missing references** — a property names another model but that model wasn't extracted.
 - **Inconsistent naming** — "Student" in one file, "student" in another.
 
 The repair loop is what makes LLM-based extraction reliable: verification provides a hard signal, and the LLM corrects itself.
@@ -263,7 +264,7 @@ The same file that a human reads and reviews is now precise enough for another L
 
 - "grade level: 9 to 12" → number, range constraint
 - "email: must be a valid email address" → string, format constraint  
-- "can take multiple classes" → relationship to Class model
+- "can take multiple classes" → a reference to the Class model (`classes: Class[]`)
 
 No special syntax. No annotations. Just explicit prose — the kind that both humans and LLMs understand.
 
@@ -363,7 +364,7 @@ main.md ─────┤   ┌────────────────
 ```
 
 Stages:
-1. **Extract** (LLM with repair loop) — extract models, properties, constraints, relationships from natural language `.md`.
+1. **Extract** (LLM with repair loop) — extract models, properties, constraints, and cross-model references from natural language `.md`.
 2. **Generate types** (deterministic) — produce `types.verbo.ts`, validate with `deno check`. Failures → repair loop.
 3. **Generate assertions** (deterministic) — produce `.verbo/validate.ts`, run to check constraints.
 4. **Clarify** (LLM) — find ambiguities in prose. If none, done.

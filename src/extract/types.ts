@@ -5,13 +5,6 @@
  * @see docs/DESIGN.md §5.1 (what the LLM extracts), §7 (type generation)
  */
 
-/** The four cardinality kinds, from the perspective of the declaring model. */
-export type RelationshipKind =
-  | "one-to-one"
-  | "one-to-many"
-  | "many-to-one"
-  | "many-to-many";
-
 export type ConstraintKind =
   | "required"
   | "optional"
@@ -43,8 +36,10 @@ export interface Constraint {
  * A property of a model.
  *
  * `type` is the type vocabulary: a primitive (`string`, `number`, `boolean`),
- * `date`, an array of a primitive (`string[]`, `number[]`, `boolean[]`), or
- * the name of another model (a direct reference).
+ * `date`, an array of a primitive (`string[]`, `number[]`, `boolean[]`), the
+ * name of another model — a direct reference (`Teacher`) — or an array of
+ * another model's name — many references (`Class[]`). A reference to another
+ * model is exactly how relationships are expressed.
  */
 export interface Property {
   name: string;
@@ -56,23 +51,11 @@ export interface Property {
   source?: string;
 }
 
-/** A relationship between the declaring model and another model. */
-export interface Relationship {
-  kind: RelationshipKind;
-  /** Name of the target model. */
-  target: string;
-  /** Optional property name this relationship becomes on the declaring model. */
-  field?: string;
-  /** Source hint, e.g. "models/class.md". */
-  source?: string;
-}
-
 export interface Model {
   name: string;
   /** Source file, e.g. "models/student.md". */
   source?: string;
   properties: Property[];
-  relationships: Relationship[];
 }
 
 /** The full extraction result — a JSON envelope of models. */

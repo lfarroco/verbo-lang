@@ -7,6 +7,4 @@ These are the properties for an entry in a directory listing:
 - modifiedAt: The date and time the entry was last modified, displayed in the local system timezone.
 - hidden: Whether the entry is hidden (its name starts with a dot). The special entries '.' and '..' are never listed.
 
-Relationships:
-
-- A directory listing can contain multiple entries.
+A directory listing can contain multiple entries.

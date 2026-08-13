@@ -8,8 +8,8 @@ Input:
 - Files are plain prose. There is no required syntax. Models may be described as
   headings, paragraphs, bullet property lists, or any combination.
 - One model is usually in its own file under models/, but a model may also be
-  mentioned only inside a relationship sentence (e.g. "A student can enroll in
-  multiple classes" names a Class model) — extract it too.
+  mentioned only as a reference from another model (e.g. "A student can enroll
+  in multiple classes" names a Class model) — extract it too.
 
 Output format:
 
@@ -22,7 +22,6 @@ Model object:
 - "name": model name, PascalCase and singular (e.g. "Student", not "students")
 - "source": the file the model came from (e.g. "models/student.md")
 - "properties": array of property objects
-- "relationships": array of relationship objects
 
 Property object:
 
@@ -36,8 +35,9 @@ Type vocabulary (property "type"):
 
 - Primitives: "string", "number", "boolean"
 - "date" — a date or date-time value
-- Arrays: "string[]", "number[]", "boolean[]"
-- Any other model's name — a direct reference to that model
+- Arrays of primitives: "string[]", "number[]", "boolean[]"
+- Any other model's name — a single reference to that model (e.g. "Teacher")
+- A model name with "[]" — many references to that model (e.g. "Class[]")
 
 Constraint vocabulary ("constraints"):
 
@@ -52,33 +52,30 @@ Constraint vocabulary ("constraints"):
 - {"kind":"format","value":"email"|"url"|"uuid"|"date"} — a format hint; e.g.
   "must be valid" for an email address
 
-Relationship object:
+Naming references to other models:
 
-- "kind": the cardinality from the perspective of the model declaring it:
-  - "one-to-one" — exactly one target (e.g. "a class has one syllabus")
-  - "one-to-many" — many targets (e.g. "a class can have multiple students" →
-    the class declares students)
-  - "many-to-one" — one target, many sources (e.g. "a class is taught by one
-    teacher" → the class declares its single teacher)
-  - "many-to-many" — many targets on both sides (e.g. "a student can enroll in
-    multiple classes")
-- "target": the name of the target model
-- "field": optional — the property name this relationship becomes on the
-  declaring model (e.g. "classes", "teacher", "students"). If omitted, the
-  generator will derive one from the target name.
+There is no separate relationship object. A reference to another model is a
+regular property whose type is the target model name — a single reference
+("Teacher") or many references ("Class[]"):
+
+- single reference → a natural singular name, e.g. "a class is taught by one
+  teacher" → {"name": "teacher", "type": "Teacher"}
+- many references → a natural plural name, e.g. "a class can have multiple
+  students" → {"name": "students", "type": "Student[]"}; when no plural reads
+  well, use the deterministic "<ModelName>_many" form, e.g. "syllabus_many"
 
 Container vs self-reference: When prose describes a wrapper that holds entries
 (e.g. "A directory listing can contain multiple entries"), model the wrapper as
-its own model (e.g. DirectoryListing) with a one-to-many relationship to the
-element model. Do NOT also add a self-referencing field on the element model
-(e.g. "entries: Entry[]" on Entry) for the same sentence — pick ONE
-interpretation, never both.
+its own model (e.g. DirectoryListing) with an "entries": "Entry[]" property. Do
+NOT also add a self-referencing "entries": "Entry[]" property on the element
+model (e.g. on Entry) for the same sentence — pick ONE interpretation, never
+both.
 
 Repair round: If a "== REPAIR ROUND ==" section appears after the spec files,
 your previous extraction produced types that fail type-checking. Re-extract and
 fix the listed errors — for example: a missed model, a wrong property type, a
-missing relationship, or inconsistent model names. Return the complete corrected
-{"models": [...]} envelope.
+missing reference between models, or inconsistent model names. Return the
+complete corrected {"models": [...]} envelope.
 
 ---
 
@@ -96,10 +93,7 @@ Properties:
 - email: The student's school email address (must be valid).
 - gradeLevel: The student's grade level (9 to 12).
 - enrollmentDate: The date the student enrolled.
-
-Relationships:
-
-- A student can enroll in multiple classes.
+- classes: The classes the student is enrolled in.
 
 == models/class.md ==
 
@@ -113,11 +107,8 @@ Properties:
 - subject: The subject of the class.
 - room: The room number where the class meets.
 - maxStudents: The maximum number of students (1 to 30).
-
-Relationships:
-
-- A class is taught by one teacher.
-- A class can have multiple students.
+- teacher: The teacher who teaches the class.
+- students: The students enrolled in the class.
 
 == models/teacher.md ==
 
@@ -131,10 +122,7 @@ Properties:
 - email: The teacher's school email address (must be valid).
 - department: The department the teacher belongs to.
 - hireDate: The date the teacher was hired.
-
-Relationships:
-
-- A teacher teaches multiple classes.
+- classes: The classes the teacher teaches.
 
 Example JSON output:
 
@@ -156,10 +144,8 @@ Example JSON output:
           "type": "number",
           "constraints": [{ "kind": "range", "min": 9, "max": 12 }]
         },
-        { "name": "enrollmentDate", "type": "date" }
-      ],
-      "relationships": [
-        { "kind": "many-to-many", "target": "Class", "field": "classes" }
+        { "name": "enrollmentDate", "type": "date" },
+        { "name": "classes", "type": "Class[]" }
       ]
     },
     {
@@ -173,11 +159,9 @@ Example JSON output:
           "name": "maxStudents",
           "type": "number",
           "constraints": [{ "kind": "range", "min": 1, "max": 30 }]
-        }
-      ],
-      "relationships": [
-        { "kind": "many-to-one", "target": "Teacher", "field": "teacher" },
-        { "kind": "one-to-many", "target": "Student", "field": "students" }
+        },
+        { "name": "teacher", "type": "Teacher" },
+        { "name": "students", "type": "Student[]" }
       ]
     },
     {
@@ -191,10 +175,8 @@ Example JSON output:
           "constraints": [{ "kind": "format", "value": "email" }]
         },
         { "name": "department", "type": "string" },
-        { "name": "hireDate", "type": "date" }
-      ],
-      "relationships": [
-        { "kind": "one-to-many", "target": "Class", "field": "classes" }
+        { "name": "hireDate", "type": "date" },
+        { "name": "classes", "type": "Class[]" }
       ]
     }
   ]
@@ -225,8 +207,7 @@ Example JSON output:
           "type": "string",
           "constraints": [{ "kind": "enum", "values": ["active", "completed"] }]
         }
-      ],
-      "relationships": []
+      ]
     }
   ]
 }
@@ -234,8 +215,8 @@ Example JSON output:
 
 Processing instructions:
 
-- Extract every model named in the files, including models referenced only in
-  relationship sentences.
+- Extract every model named in the files, including models mentioned only as
+  references from another model.
 - Infer property types from the prose description ("a string", "9 to 12" →
   number with a range, "the date ..." → date).
 - Infer enums from "either X or Y" / "one of X, Y" / "restricted to".

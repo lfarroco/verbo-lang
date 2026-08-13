@@ -40,14 +40,12 @@ const lsSpec = JSON.stringify({
         { name: "modifiedAt", type: "date" },
         { name: "hidden", type: "boolean" },
       ],
-      relationships: [],
     },
     {
       name: "DirectoryListing",
       source: "models/entry.md",
-      properties: [],
-      relationships: [
-        { kind: "one-to-many", target: "Entry", field: "entries" },
+      properties: [
+        { name: "entries", type: "Entry[]" },
       ],
     },
     {
@@ -65,7 +63,6 @@ const lsSpec = JSON.stringify({
         { name: "reverse", type: "boolean" },
         { name: "recursive", type: "boolean" },
       ],
-      relationships: [],
     },
   ],
 });

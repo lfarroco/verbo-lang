@@ -8,7 +8,4 @@ Properties:
 - email: The student's school email address (must be valid).
 - gradeLevel: The student's grade level (9 to 12).
 - enrollmentDate: The date the student enrolled.
-
-Relationships:
-
-- A student can enroll in multiple classes.
+- classes: The classes the student is enrolled in.

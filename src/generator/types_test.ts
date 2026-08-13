@@ -22,9 +22,7 @@ const classroom: ExtractedSpec = {
           constraints: [{ kind: "range", min: 9, max: 12 }],
         },
         { name: "enrollmentDate", type: "date" },
-      ],
-      relationships: [
-        { kind: "many-to-many", target: "Class", field: "classes" },
+        { name: "classes", type: "Class[]" },
       ],
     },
     {
@@ -39,9 +37,7 @@ const classroom: ExtractedSpec = {
         },
         { name: "department", type: "string" },
         { name: "hireDate", type: "date" },
-      ],
-      relationships: [
-        { kind: "one-to-many", target: "Class", field: "classes" },
+        { name: "classes", type: "Class[]" },
       ],
     },
     {
@@ -56,10 +52,8 @@ const classroom: ExtractedSpec = {
           type: "number",
           constraints: [{ kind: "range", min: 1, max: 30 }],
         },
-      ],
-      relationships: [
-        { kind: "many-to-one", target: "Teacher", field: "teacher" },
-        { kind: "one-to-many", target: "Student", field: "students" },
+        { name: "teacher", type: "Teacher" },
+        { name: "students", type: "Student[]" },
       ],
     },
   ],
@@ -116,13 +110,11 @@ Deno.test("generateTypes emits enum unions, optional, arrays and model refs", ()
           { name: "notes", type: "string", optional: true },
           { name: "rating", type: "number[]" },
         ],
-        relationships: [],
       },
       {
         name: "User",
         source: "models/user.md",
         properties: [{ name: "email", type: "string" }],
-        relationships: [],
       },
     ],
   };
@@ -151,17 +143,16 @@ Deno.test("generateTypes emits enum unions, optional, arrays and model refs", ()
   assertEquals(generateTypes(spec), expected);
 });
 
-Deno.test("generateTypes derives relationship field names (incl. pluralization)", () => {
+Deno.test("generateTypes renders model-reference properties as T / T[] fields", () => {
   const spec: ExtractedSpec = {
     models: [
       {
         name: "Class",
-        properties: [],
-        relationships: [
-          { kind: "one-to-many", target: "Student" },
-          { kind: "many-to-one", target: "Teacher" },
-          { kind: "many-to-many", target: "Monster" },
-          { kind: "one-to-one", target: "Syllabus" },
+        properties: [
+          { name: "students", type: "Student[]" },
+          { name: "teacher", type: "Teacher" },
+          { name: "monsters", type: "Monster[]" },
+          { name: "syllabus", type: "Syllabus" },
         ],
       },
     ],
@@ -184,7 +175,7 @@ Deno.test("generateTypes derives relationship field names (incl. pluralization)"
 Deno.test("generateTypes handles empty models, numeric enums and escaping", () => {
   const spec: ExtractedSpec = {
     models: [
-      { name: "Empty", properties: [], relationships: [] },
+      { name: "Empty", properties: [] },
       {
         name: "Score",
         source: "models/score.md",
@@ -201,7 +192,6 @@ Deno.test("generateTypes handles empty models, numeric enums and escaping", () =
           },
           { name: "history", type: "date[]" },
         ],
-        relationships: [],
       },
     ],
   };

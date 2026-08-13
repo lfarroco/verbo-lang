@@ -7,7 +7,4 @@ These are the properties for a hero:
 - health: The health of the hero.
 - attack: The attack of the hero.
 - location: The current location of the hero.
-
-Relationships:
-
-- A hero can have multiple items.
+- items: The items the hero can have.

@@ -20,7 +20,6 @@ Deno.test("parseExtraction parses a fenced JSON envelope", () => {
   assertEquals(spec.models[0].properties[0].constraints, [
     { kind: "enum", values: ["active", "completed"] },
   ]);
-  assertEquals(spec.models[0].relationships, []);
 });
 
 Deno.test("parseExtraction tolerates a bare array envelope", () => {
@@ -43,7 +42,6 @@ Deno.test("parseExtraction drops malformed entries and defaults missing fields",
 
   const spec = parseExtraction(text);
   assertEquals(spec.models.map((m) => m.name), ["Good", "Defaults"]);
-  assertEquals(spec.models[0].relationships, []);
   assertEquals(spec.models[1].properties[0].type, "string");
   assertEquals(spec.models[1].properties[0].constraints, []);
 });
@@ -69,25 +67,27 @@ Deno.test("parseExtraction normalizes optional/required precedence", () => {
   assertEquals(props[2].constraints, [{ kind: "required" }]);
 });
 
-Deno.test("parseExtraction normalizes relationships and defaults unknown kinds", () => {
+Deno.test("parseExtraction keeps model-reference properties and ignores a stray relationships key", () => {
   const text = JSON.stringify({
     models: [{
       name: "Class",
-      properties: [],
+      properties: [
+        { name: "teacher", type: "Teacher" },
+        { name: "students", type: "Student[]" },
+      ],
       relationships: [
-        { kind: "many-to-one", target: "Teacher", field: "teacher" },
-        { kind: "bogus", target: "Student" }, // unknown kind → default
-        { target: "Course" }, // missing kind → default
-        { kind: "one-to-many" }, // missing target → dropped
+        { kind: "one-to-many", target: "Student", field: "students" },
       ],
     }],
   });
 
-  const rels = parseExtraction(text).models[0].relationships;
-  assertEquals(rels.length, 3);
-  assertEquals(rels[0], { kind: "many-to-one", target: "Teacher", field: "teacher" });
-  assertEquals(rels[1], { kind: "one-to-many", target: "Student" });
-  assertEquals(rels[2], { kind: "one-to-many", target: "Course" });
+  const props = parseExtraction(text).models[0].properties;
+  assertEquals(props.length, 2);
+  assertEquals(props[0].name, "teacher");
+  assertEquals(props[0].type, "Teacher");
+  assertEquals(props[0].optional, false);
+  assertEquals(props[1].name, "students");
+  assertEquals(props[1].type, "Student[]");
 });
 
 Deno.test("parseExtraction keeps constraint values with the right shape", () => {

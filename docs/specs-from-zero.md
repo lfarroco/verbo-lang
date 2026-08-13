@@ -157,13 +157,14 @@ The prompt is the highest-leverage artifact. Key content:
 - **Write drafts in extraction-friendly prose** — the exact conventions the
   extractor already rewards (README "Writing specs", DESIGN §8): property
   bullets `- name: description`, explicit ranges ("9 to 12"), enums ("either
-  active or completed"), relationship sentences ("A student can enroll in
-  multiple classes"). This minimizes round-trip drift: the drafting model writes
-  in the dialect the extraction model already parses reliably.
+  active or completed"), cross-model reference properties ("- classes: The
+  classes the student is enrolled in."). This minimizes round-trip drift: the
+  drafting model writes in the dialect the extraction model already parses
+  reliably.
 - **Vocabulary reference** from `src/extract/types.ts` (string/number/boolean/
   date/arrays/model refs; enum/range/minimum/maximum/positive/format/required/
-  optional; relationship cardinalities) so the interview questions map cleanly
-  onto what the pipeline can actually validate.
+  optional) so the interview questions map cleanly onto what the pipeline can
+  actually validate.
 - **Rules:** one question at a time; prefer offering options; never invent
   models/properties not grounded in the user's answers; no code fences, backticks,
   or type annotations in the prose; one model per file.

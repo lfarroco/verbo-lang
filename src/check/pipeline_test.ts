@@ -38,7 +38,6 @@ const goodSpec = JSON.stringify({
         constraints: [{ kind: "enum", values: ["active", "completed"] }],
       },
     ],
-    relationships: [],
   }],
 });
 
@@ -50,7 +49,6 @@ const badSpec = JSON.stringify({
       { name: "name", type: "string" },
       { name: "missing", type: "UndefinedRef" },
     ],
-    relationships: [],
   }],
 });
 

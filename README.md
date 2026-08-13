@@ -37,10 +37,7 @@ Properties:
 - email: The student's school email address (must be valid).
 - gradeLevel: The student's grade level (9 to 12).
 - enrollmentDate: The date the student enrolled.
-
-Relationships:
-
-- A student can enroll in multiple classes.
+- classes: The classes the student is enrolled in.
 ```
 
 ### models/class.md
@@ -56,11 +53,8 @@ Properties:
 - subject: The subject of the class.
 - room: The room number where the class meets.
 - maxStudents: The maximum number of students (1 to 30).
-
-Relationships:
-
-- A class is taught by one teacher.
-- A class can have multiple students.
+- teacher: The teacher who teaches the class.
+- students: The students enrolled in the class.
 ```
 
 No special syntax. No annotations. Just the way you'd explain your models to a
@@ -69,7 +63,7 @@ teammate.
 When you run `verbo check`, Verbo:
 
 1. **Extracts** structure from your prose using an LLM — types, constraints,
-   relationships.
+   and cross-model references.
 2. **Validates internally** — generates TypeScript types and constraint
    assertions, runs `deno check`. Failures feed back to the LLM for correction.
 3. **Runs clarify** — an AI-powered pass that finds vague language, imprecise
@@ -86,7 +80,8 @@ Verbo has two layers:
 ### LLM-powered extraction
 
 An LLM reads your natural language specs and extracts structured data — model
-names, properties, types, constraints, and relationships. No parser to maintain.
+names, properties, types, constraints, and cross-model references. No parser to
+maintain.
 No syntax to learn. The LLM handles the variation in how people describe things.
 
 If the extraction produces types that fail `deno check`, the errors are fed back
@@ -144,8 +139,9 @@ teammate. Some conventions help the LLM extract better:
 - **Use bullet points for properties** — `- name: description` patterns.
 - **Be explicit about ranges and constraints** — "9 to 12" is clearer than "a
   high school student."
-- **Name your relationships** — "A student can enroll in multiple classes" tells
-  the LLM which models are connected.
+- **Describe cross-model references** — how one model relates to another is a
+  property that references it: a single one (`- teacher: The teacher who teaches
+  the class.`) or a list (`- classes: The classes the student is enrolled in.`).
 - **Add a `main.md`** — gives the LLM project-level context.
 
 For a complete guide, see the [**design reference**](./docs/DESIGN.md).
