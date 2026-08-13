@@ -405,3 +405,34 @@ Grouped by the tiers in [`docs/language-features.md`](./language-features.md)
 - [ ] **Q14. Namespaces / domains** — group models ("billing", "inventory").
 - [ ] **Q15. Cross-spec imports** — reference another Verbo project's model.
 - [ ] **Q16. Deprecation / status metadata** — "deprecated: use X".
+
+---
+
+## 7. Engineering disciplines (guiding goals)
+
+> Guiding goals and sources of inspiration, not hard rules. Rationale and
+> details in [`docs/language-features.md`](./language-features.md) §5.
+
+- [ ] **D1. Normative language** — normalize must / must not / should / may into
+      requirement levels; "must not" → forbidden values; "should" →
+      recommendation (a soft tier with lower clarify severity).
+- [ ] **D2. Canonical phrasings** — recommended-phrasings catalog (one canonical
+      sentence pattern per constraint kind); clarify suggests canonical forms.
+- [ ] **D3. Terminology discipline** — glossary + drift detection (one term, one
+      meaning).
+- [ ] **D4. Verifiability gate** — every claim must map to a type, assertion, or
+      function contract; clarify flags unverifiable claims.
+- [ ] **D5. Failure-mode enumeration** — standard edge-case checklist
+      (empty/zero/negative/boundary/missing/null/duplicates; inclusive vs
+      exclusive bounds).
+- [ ] **D6. Examples as verification** — per-model example instances; the
+      interview asks for a concrete sample.
+- [ ] **D7. Independent review** — adversarial clarify persona ("try to break
+      this spec") + explain-back summary step.
+- [ ] **D8. Traceability & change control** — requirement IDs, spec changelog
+      from the audit trail, rename impact analysis, generated model graph,
+      definition of done.
+- [ ] **D9. Measurement** — ambiguity density as tracked spec debt; baseline +
+      CI signal.
+- [ ] **D10. Editorial quality** — sentence editing (length/voice/tense),
+      naming-quality rules, structural consistency.

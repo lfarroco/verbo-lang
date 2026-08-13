@@ -110,7 +110,37 @@ Notes:
 - [ ] **Cross-spec imports** — reference another Verbo project's model.
 - [ ] **Deprecation / status metadata** — "deprecated: use X".
 
-## 5. Explicitly rejected (OOP)
+## 5. Engineering disciplines (guiding goals)
+
+> Lessons from Simplified Technical English, requirements engineering
+> (RFC 2119, traceability, FMEA) and general engineering practice. These are
+> **guiding goals and sources of inspiration, not hard rules**: they shape what
+> the interview asks, what clarify flags, and what the pipeline verifies —
+> without imposing syntax or structure on the prose. Most are behavior changes
+> (prompts, interview strategy, metrics), not extraction-schema additions.
+
+| Discipline | Idea source | Concrete Verbo behavior | Kind of work |
+|---|---|---|---|
+| **D1. Normative language** | RFC 2119 | Normalize "must"/"shall" → required, "may" → optional, "must not" → forbidden values, "should" → recommendation (a soft tier with lower clarify severity) | schema + prompt |
+| **D2. Canonical phrasings** | STE approved-phrasings | A recommended-phrasings catalog — one canonical sentence pattern per constraint kind; clarify suggests the canonical form | prompt |
+| **D3. Terminology discipline** | STE one-term-one-meaning | Glossary + drift detection: clarify flags a term used with two meanings, or two terms for one concept | clarify prompt |
+| **D4. Verifiability gate** | requirements engineering | Every claim must map to a type, assertion, or function contract; clarify flags unverifiable claims | clarify prompt |
+| **D5. Failure-mode enumeration** | FMEA / off-by-one discipline | Standard edge-case checklist per model/property/function: empty, zero, negative, boundary, missing optional, null, duplicates; inclusive vs exclusive bounds | interview engine |
+| **D6. Examples as verification** | STE illustrations / TDD | Per-model example instances as spec elements; the interview asks for a sample ("give me a concrete Student") | schema + prompt + assertions |
+| **D7. Independent review** | peer review / rubber duck | A second, adversarial clarify persona ("try to break this spec") + an explain-back summary step ("say the spec back to me") | interview / new command |
+| **D8. Traceability & change control** | requirements engineering / CM | Requirement IDs on refined sentences; a spec changelog derived from the audit trail; impact analysis ("what breaks if I rename Student?") via the reference graph; a generated model graph as a review aid; a documented definition of done | pipeline + CLI |
+| **D9. Measurement** | engineering metrics | Ambiguity density as tracked "spec debt" (the recheck count), with a baseline and a CI signal | clarify / recheck |
+| **D10. Editorial quality** | STE sentence rules | Interview editing: split long sentences, active voice, present tense; naming-quality rules (single-letter / generic names); structural consistency across files | interview engine |
+
+### What we deliberately do not copy
+
+- **A restricted dictionary** (STE's ~900 words) — syntax by the back door.
+- **Document templates** (IEEE-830 style) — rigid structure.
+- **Mandatory scenario syntax** (Gherkin) — recommended sentence patterns only.
+- **Diagrams as source** — a generated Mermaid graph is a review aid, never an
+  input.
+
+## 6. Explicitly rejected (OOP)
 
 | Feature | Why rejected | Replacement |
 |---|---|---|
@@ -120,7 +150,7 @@ Notes:
 | Encapsulation / visibility | a spec is documentation, not an API for a compiler | — |
 | Generics | premature at this scale | — |
 
-## 6. Recommended order
+## 7. Recommended order
 
 > defaults → unique → identity → inverse relationships → pre/post conditions →
 > aliases → sealed unions → constraint polish (element / ordered /
