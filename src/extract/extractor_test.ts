@@ -114,6 +114,70 @@ Deno.test("parseExtraction keeps constraint values with the right shape", () => 
   assertEquals(props[1].constraints, [{ kind: "format", value: "email" }]);
 });
 
+Deno.test("parseExtraction parses functions with params and returnType", () => {
+  const text = JSON.stringify({
+    models: [],
+    functions: [
+      {
+        name: "formatEnrollmentDate",
+        source: "functions.md",
+        params: [{ name: "date", type: "date" }],
+        returnType: "string",
+      },
+      {
+        name: "averageClassSize",
+        source: "functions.md",
+        params: [{ name: "classes", type: "Class[]" }],
+        returnType: "number",
+      },
+    ],
+  });
+
+  const spec = parseExtraction(text);
+  assertEquals(spec.models.length, 0);
+  assertEquals(spec.functions!.length, 2);
+  assertEquals(spec.functions![0].name, "formatEnrollmentDate");
+  assertEquals(spec.functions![0].source, "functions.md");
+  // Params reuse the property normalizer, so they carry optional/constraints.
+  assertEquals(spec.functions![0].params, [
+    { name: "date", type: "date", optional: false, constraints: [] },
+  ]);
+  assertEquals(spec.functions![0].returnType, "string");
+  assertEquals(spec.functions![1].params, [
+    { name: "classes", type: "Class[]", optional: false, constraints: [] },
+  ]);
+  assertEquals(spec.functions![1].returnType, "number");
+});
+
+Deno.test("parseExtraction defaults missing function fields and drops malformed entries", () => {
+  const text = JSON.stringify({
+    models: [],
+    functions: [
+      { name: "noop", params: [] }, // no returnType → "void"
+      { name: "sloppy" }, // no params → []
+      { name: "", params: [] }, // missing name → dropped
+      { params: [{ name: "x", type: "number" }] }, // missing name → dropped
+      "junk", // not an object → dropped
+      null,
+    ],
+  });
+
+  const spec = parseExtraction(text);
+  assertEquals(spec.functions!.length, 2);
+  assertEquals(spec.functions![0].name, "noop");
+  assertEquals(spec.functions![0].params, []);
+  assertEquals(spec.functions![0].returnType, "void");
+  assertEquals(spec.functions![1].params, []);
+  assertEquals(spec.functions![1].returnType, "void");
+});
+
+Deno.test("parseExtraction defaults functions to [] when the envelope omits it", () => {
+  const spec = parseExtraction(
+    '{"models": [{"name": "Todo", "properties": []}]}',
+  );
+  assertEquals(spec.functions, []);
+});
+
 Deno.test("parseExtraction throws on non-JSON text", () => {
   assertThrows(() => parseExtraction("no json here"));
 });

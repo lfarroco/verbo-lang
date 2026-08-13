@@ -83,6 +83,25 @@ relationship construct. List names use a natural plural (`students`, `classes`)
 or the deterministic `<Model>_many` form (`syllabus_many`) when no plural reads
 well — never a mechanical "append s/es" rule.
 
+Helper functions are described the same way, and the LLM extracts their
+signatures — the same type vocabulary covers parameters and return types, so a
+function can take or return a model:
+
+```markdown
+- formatEnrollmentDate(date): The enrollment date of a student, formatted as
+  YYYY-MM-DD for display. Takes a date and returns a string.
+- averageClassSize(classes): The average number of students in a list of
+  classes, computed as a number. When the list is empty the average is 0.
+```
+
+```json
+{
+  "name": "averageClassSize",
+  "params": [{ "name": "classes", "type": "Class[]" }],
+  "returnType": "number"
+}
+```
+
 ### 5.2 Conventions that help the LLM
 
 While there is no required syntax, some conventions improve extraction quality:
@@ -106,6 +125,7 @@ The prompt (`src/prompts/extract.md`) instructs the LLM to extract:
 - Properties with names, types, and constraints
 - Cross-model references — properties whose type is another model, single or `[]`
 - Cross-file references
+- Function signatures — helpers described in prose (name, params, return type)
 
 The prompt includes few-shot examples from the classroom and todo fixtures.
 
@@ -165,6 +185,16 @@ export type Class = {
   teacher: Teacher;
   students: Student[];
 };
+```
+
+Functions are emitted as type contracts after the models. The generated types
+are the contract, not the implementation — an AI coding tool implements them
+from the refined spec (`examples/ls/` is the end-to-end demonstration):
+
+```typescript
+export type formatEnrollmentDate = (date: Date) => string;
+
+export type averageClassSize = (classes: Class[]) => number;
 ```
 
 ### 7.2 Validation

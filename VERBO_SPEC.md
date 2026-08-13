@@ -96,6 +96,33 @@ This defines the data model for a school management system.
 It tracks students, teachers, and classes.
 ```
 
+### 2.6 Functions
+
+Specs can also describe helper functions. Verbo extracts the signature and
+emits a TypeScript function type contract in `types.verbo.ts` — validation
+only; an AI coding tool implements the contract from the refined prose.
+
+```markdown
+# Helper Functions
+
+- formatEnrollmentDate(date): The enrollment date of a student, formatted as
+  YYYY-MM-DD for display. Takes a date and returns a string.
+- averageClassSize(classes): The average number of students in a list of
+  classes, computed as a number. When the list is empty the average is 0.
+```
+
+The LLM extracts:
+
+- `formatEnrollmentDate(date: Date): string`
+- `averageClassSize(classes: Class[]): number`
+
+Parameters and return types use the same vocabulary as model properties, so a
+function can take or return a model. Generated contract:
+
+```typescript
+export type averageClassSize = (classes: Class[]) => number;
+```
+
 ## 3. Progressive refinement
 
 The `.md` file you write IS the output. There's no separate artifact. The interview edits your file in place — each answer makes the prose more explicit.
@@ -240,6 +267,17 @@ Properties:
 - maxStudents: The maximum number of students (1 to 30).
 - teacher: The teacher who teaches the class.
 - students: The students enrolled in the class.
+```
+
+### functions.md
+
+```markdown
+# Helper Functions
+
+- formatEnrollmentDate(date): The enrollment date of a student, formatted as
+  YYYY-MM-DD for display. Takes a date and returns a string.
+- averageClassSize(classes): The average number of students in a list of
+  classes, computed as a number. When the list is empty the average is 0.
 ```
 
 ### main.md

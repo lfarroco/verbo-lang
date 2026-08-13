@@ -4,8 +4,10 @@ import { createDirIfNotExists } from "../utils.ts";
 import type {
   Constraint,
   ExtractedSpec,
+  FunctionParam,
   Model,
   Property,
+  SpecFunction,
 } from "./types.ts";
 
 export type AiProvider = (prompt: string) => Promise<string>;
@@ -114,7 +116,20 @@ function normalizeSpec(parsed: unknown): ExtractedSpec {
     if (model) models.push(model);
   }
 
-  return { models };
+  // Functions are optional in the envelope — old extractions (and fixtures)
+  // may omit the key entirely.
+  const functions: SpecFunction[] = [];
+  const functionsRaw = Array.isArray(parsed)
+    ? null
+    : (parsed as { functions?: unknown } | null)?.functions;
+  if (Array.isArray(functionsRaw)) {
+    for (const item of functionsRaw) {
+      const fn = normalizeFunction(item);
+      if (fn) functions.push(fn);
+    }
+  }
+
+  return { models, functions };
 }
 
 function normalizeModel(item: unknown): Model | null {
@@ -135,6 +150,33 @@ function normalizeModel(item: unknown): Model | null {
     model.source = m.source.trim();
   }
   return model;
+}
+
+function normalizeFunction(item: unknown): SpecFunction | null {
+  if (!item || typeof item !== "object") return null;
+  const f = item as Record<string, unknown>;
+  if (typeof f.name !== "string" || f.name.trim() === "") return null;
+
+  // Params share the property shape, so reuse the same normalizer.
+  const params: FunctionParam[] = [];
+  if (Array.isArray(f.params)) {
+    for (const p of f.params) {
+      const param = normalizeProperty(p);
+      if (param) params.push(param);
+    }
+  }
+
+  const fn: SpecFunction = {
+    name: f.name.trim(),
+    params,
+    returnType: typeof f.returnType === "string" && f.returnType.trim() !== ""
+      ? f.returnType.trim()
+      : "void",
+  };
+  if (typeof f.source === "string" && f.source.trim() !== "") {
+    fn.source = f.source.trim();
+  }
+  return fn;
 }
 
 function normalizeProperty(item: unknown): Property | null {

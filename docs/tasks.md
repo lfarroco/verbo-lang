@@ -221,6 +221,38 @@ that passes `deno check` (extraction gate per DESIGN §15), and the generated
 
 ---
 
+## Phase 6 — Function specs (extraction + generation)
+
+> Verbo previously extracted and generated models only. Function specs describe
+> helper functions in prose; Verbo extracts their signatures and emits them as
+> TypeScript function type contracts in `types.verbo.ts`, verified by
+> `deno check`. No implementation is generated (DESIGN §1) — an AI coding tool
+> implements the contract from the refined prose, as in `examples/ls`.
+
+- [x] `src/extract/types.ts` — `SpecFunction`/`FunctionParam`;
+      `ExtractedSpec` gains an optional `functions` array (defaults to `[]`, so
+      existing extractions and fixtures keep working)
+- [x] `src/prompts/extract.md` — envelope is now `{"models": [...],
+      "functions": [...]}`; Function object vocabulary (camelCase name,
+      `params`, `returnType` incl. `void`); classroom few-shot shows
+      `functions.md`; todo example shows `"functions": []`
+- [x] `src/extract/extractor.ts` — `normalizeFunction` (params reuse the
+      property normalizer, `returnType` defaults to `"void"`, malformed entries
+      dropped); missing `functions` key tolerated
+- [x] `src/generator/types.ts` — renders `export type name = (params) => R;`
+      contracts after the models; optional params → `?`; model references work
+      as param/return types; function sources included in the header comment
+- [x] `test/classroom/functions.md` + regenerated `types.verbo.ts` —
+      `formatEnrollmentDate(date: Date): string` and
+      `averageClassSize(classes: Class[]): number`; passes `deno check`
+- [x] Tests — extractor parse/default/drop for functions; generator exact-render
+      + `deno check` integration; `runCheck` flows functions into
+      `types.verbo.ts`
+- [x] Docs — README (demo `functions.md`, writing-specs convention),
+      VERBO_SPEC §2.6 + complete example, AI_README
+
+---
+
 ## Phase 5 — High-priority improvements
 
 > Surfaced by the relationships-as-properties code review: cross-model

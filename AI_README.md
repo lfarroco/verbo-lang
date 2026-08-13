@@ -11,8 +11,13 @@ Verbo does NOT generate application code. It validates specifications. The outpu
 ## 2. Key Concepts
 
 - **Natural Language as Input:** Specs are plain `.md` files. No syntax, no annotations, no directives. Users write the way they'd explain models to a teammate. The LLM handles interpretation.
-- **LLM as Extractor:** Structure (models, properties, types, constraints, cross-model references) is extracted from prose by an LLM with a **repair loop**: if `deno check` fails on generated types, errors are fed back to the LLM for a corrected extraction (max 3 retries).
-- **TypeScript Types as Validation Output:** Extracted structure is emitted as `types.verbo.ts`. `deno check` validates the type graph — no custom manifest or validator.
+- **LLM as Extractor:** Structure (models, properties, types, constraints,
+  cross-model references, and function signatures) is extracted from prose by an
+  LLM with a **repair loop**: if `deno check` fails on generated types, errors
+  are fed back to the LLM for a corrected extraction (max 3 retries).
+- **TypeScript Types as Validation Output:** Extracted structure is emitted as
+  `types.verbo.ts` — model types plus function contracts. `deno check` validates
+  the type graph — no custom manifest or validator.
 - **Constraint Assertions:** Value-level constraints (ranges, required fields, positive values) that TypeScript can't express are generated as assertion code in `.verbo/validate.ts`.
 - **AI-Assisted Clarify / Interview:** A clarify pass finds ambiguity in prose. An interactive interview resolves it and writes answers back into the `.md` files, with an audit trail.
 - **No Code Generation:** Application code, API handlers, SQL schemas — all out of scope. Verbo's output is validated specifications.
@@ -36,6 +41,8 @@ Verbo does NOT generate application code. It validates specifications. The outpu
 
 - `main.md`: project-level description (free-form prose).
 - `models/`: one `.md` per data model (free-form prose, no directives required).
+- `functions.md`: helper functions described in prose (optional); Verbo emits
+  their signatures as TS function contracts in `types.verbo.ts`.
 
 **Generated artifacts:**
 

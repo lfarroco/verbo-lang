@@ -22,7 +22,7 @@ internally for verification only.
 
 ## Demo
 
-Given plain Markdown files describing your models:
+Given plain Markdown files describing your models and helper functions:
 
 ### models/student.md
 
@@ -57,15 +57,29 @@ Properties:
 - students: The students enrolled in the class.
 ```
 
+### functions.md
+
+```markdown
+# Helper Functions
+
+These are the helper functions provided by the school management system:
+
+- formatEnrollmentDate(date): The enrollment date of a student, formatted as
+  YYYY-MM-DD for display. Takes a date and returns a string.
+- averageClassSize(classes): The average number of students in a list of
+  classes, computed as a number. When the list is empty the average is 0.
+```
+
 No special syntax. No annotations. Just the way you'd explain your models to a
 teammate.
 
 When you run `verbo check`, Verbo:
 
 1. **Extracts** structure from your prose using an LLM — types, constraints,
-   and cross-model references.
-2. **Validates internally** — generates TypeScript types and constraint
-   assertions, runs `deno check`. Failures feed back to the LLM for correction.
+   cross-model references, and function signatures.
+2. **Validates internally** — generates TypeScript types (models and function
+   contracts) and constraint assertions, runs `deno check`. Failures feed back
+   to the LLM for correction.
 3. **Runs clarify** — an AI-powered pass that finds vague language, imprecise
    declarations, contradictions, and missing definitions.
 4. **Offers interview** — interactive collaborator that asks questions, proposes
@@ -143,6 +157,11 @@ teammate. Some conventions help the LLM extract better:
   property that references it: a single one (`- teacher: The teacher who teaches
   the class.`) or a list (`- classes: The classes the student is enrolled in.`).
 - **Add a `main.md`** — gives the LLM project-level context.
+- **Describe helper functions too** — prose like "a helper that formats a date"
+  is extracted as a function contract in `types.verbo.ts`, e.g.
+  `export type formatEnrollmentDate = (date: Date) => string;`. No implementation
+  is generated — an AI coding tool implements the contract from the refined
+  spec (see `test/classroom/functions.md`).
 
 For a complete guide, see the [**design reference**](./docs/DESIGN.md).
 

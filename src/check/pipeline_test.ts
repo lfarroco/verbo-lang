@@ -39,6 +39,12 @@ const goodSpec = JSON.stringify({
       },
     ],
   }],
+  functions: [{
+    name: "formatTodo",
+    source: "functions.md",
+    params: [{ name: "todo", type: "Todo" }],
+    returnType: "string",
+  }],
 });
 
 const badSpec = JSON.stringify({
@@ -86,6 +92,11 @@ Deno.test("runCheck succeeds on the first attempt", async () => {
     const typesText = Deno.readTextFileSync(typesPath);
     assertStringIncludes(typesText, "export type Todo = {");
     assertStringIncludes(typesText, "name: string;");
+    // Functions extracted from prose are emitted as type contracts too.
+    assertStringIncludes(
+      typesText,
+      "export type formatTodo = (todo: Todo) => string;",
+    );
 
     const validatePath = checkedPaths[1];
     assertStringIncludes(validatePath, join(".verbo", "validate.ts"));

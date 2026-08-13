@@ -13,7 +13,8 @@ Input:
 
 Output format:
 
-- A single JSON object with the envelope {"models": [...]}.
+- A single JSON object with the envelope {"models": [...], "functions": [...]}.
+- "functions" may be an empty array when the specs describe no functions.
 - Wrap the JSON in a markdown code block. Output ONLY the JSON — no commentary
   outside the block.
 
@@ -30,6 +31,20 @@ Property object:
 - "optional": true only when the prose clearly allows omission (e.g. "optional",
   "may be empty", "if provided"). Omit for required properties.
 - "constraints": array of constraint objects (empty or omitted when none)
+
+Function object ("functions" array):
+
+- "name": function name, camelCase (e.g. "formatDate", not "FormatDate")
+- "source": the file the function came from (e.g. "functions.md")
+- "params": array of parameter objects — same shape as property objects (name,
+  type, optional, constraints). Empty when the function takes no arguments.
+- "returnType": the type the function returns, from the type vocabulary below,
+  or "void" when it returns nothing
+
+Functions are helpers or operations described in prose, e.g. "The tool has a
+helper that formats a date" or "a function that computes the average of a list
+of numbers". Extract only functions the prose actually describes — do NOT invent
+helpers from model property descriptions.
 
 Type vocabulary (property "type"):
 
@@ -75,11 +90,12 @@ Repair round: If a "== REPAIR ROUND ==" section appears after the spec files,
 your previous extraction produced types that fail type-checking. Re-extract and
 fix the listed errors — for example: a missed model, a wrong property type, a
 missing reference between models, or inconsistent model names. Return the
-complete corrected {"models": [...]} envelope.
+complete corrected {"models": [...], "functions": [...]} envelope.
 
 ---
 
-Example 1 — classroom (models/student.md, models/class.md, models/teacher.md):
+Example 1 — classroom (models/student.md, models/class.md, models/teacher.md,
+functions.md):
 
 == models/student.md ==
 
@@ -123,6 +139,17 @@ Properties:
 - department: The department the teacher belongs to.
 - hireDate: The date the teacher was hired.
 - classes: The classes the teacher teaches.
+
+== functions.md ==
+
+# Helper Functions
+
+These are the helper functions provided by the school management system:
+
+- formatEnrollmentDate(date): The enrollment date of a student, formatted as
+  YYYY-MM-DD for display. Takes a date and returns a string.
+- averageClassSize(classes): The average number of students in a list of
+  classes, computed as a number. When the list is empty the average is 0.
 
 Example JSON output:
 
@@ -179,6 +206,20 @@ Example JSON output:
         { "name": "classes", "type": "Class[]" }
       ]
     }
+  ],
+  "functions": [
+    {
+      "name": "formatEnrollmentDate",
+      "source": "functions.md",
+      "params": [{ "name": "date", "type": "date" }],
+      "returnType": "string"
+    },
+    {
+      "name": "averageClassSize",
+      "source": "functions.md",
+      "params": [{ "name": "classes", "type": "Class[]" }],
+      "returnType": "number"
+    }
   ]
 }
 ```
@@ -209,7 +250,8 @@ Example JSON output:
         }
       ]
     }
-  ]
+  ],
+  "functions": []
 }
 ```
 
@@ -220,5 +262,8 @@ Processing instructions:
 - Infer property types from the prose description ("a string", "9 to 12" →
   number with a range, "the date ..." → date).
 - Infer enums from "either X or Y" / "one of X, Y" / "restricted to".
-- Keep model and property names consistent across all files.
-- Output ONLY the {"models": [...]} JSON envelope in a markdown code block.
+- Infer function signatures from prose ("takes a date and returns a string" →
+  param date: "date", returnType "string"; "a list of classes" → "Class[]").
+- Keep model, property and function names consistent across all files.
+- Output ONLY the {"models": [...], "functions": [...]} JSON envelope in a
+  markdown code block.

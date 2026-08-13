@@ -58,7 +58,39 @@ export interface Model {
   properties: Property[];
 }
 
-/** The full extraction result — a JSON envelope of models. */
+/**
+ * A parameter of a function. The shape mirrors `Property` (name, type,
+ * optional, constraints) but the semantics are for function arguments, not
+ * model fields.
+ */
+export interface FunctionParam {
+  name: string;
+  type: string;
+  /** Whether the argument may be omitted. Defaults to false. */
+  optional?: boolean;
+  constraints?: Constraint[];
+  /** Source hint, e.g. "functions.md". */
+  source?: string;
+}
+
+/**
+ * A function signature described in the specs — a helper or operation the
+ * system provides. Extracted from prose ("a helper that formats a date"),
+ * emitted as a TS function type contract in `types.verbo.ts`, and verified by
+ * `deno check`. No implementation is generated — an AI coding tool reads the
+ * contract and implements it (DESIGN §1).
+ */
+export interface SpecFunction {
+  name: string;
+  /** Source file, e.g. "functions.md". */
+  source?: string;
+  params: FunctionParam[];
+  /** Return type from the same vocabulary as `Property.type`, or "void". */
+  returnType: string;
+}
+
+/** The full extraction result — a JSON envelope of models and functions. */
 export interface ExtractedSpec {
   models: Model[];
+  functions?: SpecFunction[];
 }
