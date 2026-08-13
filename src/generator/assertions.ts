@@ -43,14 +43,25 @@ export function generateAssertions(spec: ExtractedSpec): string {
       assertFns.push(renderAssert(model, property, applicable));
 
       const prop = property.name;
-      const call =
-        `run(() => assert_${model.name}_${prop}(value.${prop}, "${model.name}.${prop}"), violations)`;
-      if (property.optional) {
-        calls.push(`  if (value.${prop} !== undefined) {`);
-        calls.push(`    ${call};`);
+      if (property.optional || property.nullable) {
+        // Optional: skip when the key is absent. Nullable: also skip when the
+        // value is null — null is the allowed state, not a violation. The value
+        // is captured in a `const` so TypeScript preserves the narrowing inside
+        // the assertion closure (a parameter's narrowing does not survive into
+        // closures).
+        calls.push(`  const ${prop} = value.${prop};`);
+        const guard = property.nullable
+          ? `${prop} !== null && ${prop} !== undefined`
+          : `${prop} !== undefined`;
+        calls.push(`  if (${guard}) {`);
+        calls.push(
+          `    run(() => assert_${model.name}_${prop}(${prop}, "${model.name}.${prop}"), violations);`,
+        );
         calls.push(`  }`);
       } else {
-        calls.push(`  ${call};`);
+        calls.push(
+          `  run(() => assert_${model.name}_${prop}(value.${prop}, "${model.name}.${prop}"), violations);`,
+        );
       }
     }
 
@@ -169,6 +180,27 @@ function renderCondition(constraint: Constraint, valueExpr: string): string {
       return "value === undefined || value === null";
     case "format":
       return `${valueExpr}.trim() === ""`;
+    case "minLength":
+      return `${valueExpr}.length < ${constraint.value ?? 0}`;
+    case "maxLength":
+      return `${valueExpr}.length > ${
+        constraint.value ?? Number.MAX_SAFE_INTEGER
+      }`;
+    case "pattern":
+      return `!new RegExp(${
+        JSON.stringify(constraint.value ?? "")
+      }).test(${valueExpr})`;
+    case "size": {
+      const len = `(${valueExpr} as unknown[]).length`;
+      const min = constraint.min;
+      const max = constraint.max;
+      if (min !== undefined && max !== undefined) {
+        return `${len} < ${min} || ${len} > ${max}`;
+      }
+      if (min !== undefined) return `${len} < ${min}`;
+      if (max !== undefined) return `${len} > ${max}`;
+      return "false";
+    }
     case "enum": {
       const values = constraint.values ?? [];
       return `!(${JSON.stringify(values)} as ${
@@ -200,6 +232,22 @@ function describeConstraint(constraint: Constraint): string {
       return "required";
     case "format":
       return `format ${constraint.value ?? "unknown"}`;
+    case "minLength":
+      return `minLength ${constraint.value ?? "?"}`;
+    case "maxLength":
+      return `maxLength ${constraint.value ?? "?"}`;
+    case "pattern":
+      return `pattern ${JSON.stringify(constraint.value ?? "")}`;
+    case "size": {
+      const min = constraint.min;
+      const max = constraint.max;
+      if (min !== undefined && max !== undefined) {
+        return `size [${min}..${max}]`;
+      }
+      if (min !== undefined) return `size [${min}..]`;
+      if (max !== undefined) return `size [..${max}]`;
+      return "size";
+    }
     case "enum": {
       const values = (constraint.values ?? []).map((v) => JSON.stringify(v));
       return `[${values.join(",")}]`;
@@ -233,8 +281,15 @@ function applicableConstraints(property: Property): Constraint[] {
       case "enum":
         return enumApplies(property);
       case "format":
+      case "minLength":
+      case "maxLength":
+      case "pattern":
         return property.type === "string";
+      case "size":
+        return property.type.endsWith("[]");
       default:
+        // Documentational constraints (`default`, `unique`, `primaryKey`) carry
+        // no per-value check and are intentionally not asserted here.
         return false;
     }
   });

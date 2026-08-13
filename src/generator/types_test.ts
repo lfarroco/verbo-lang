@@ -300,6 +300,107 @@ Deno.test("generateTypes enum-on-array output passes deno check (H1)", async () 
   }
 });
 
+// --- Quick wins: nullable + documentational constraints ---
+
+Deno.test("generateTypes renders nullable types and documentational tags", () => {
+  const spec: ExtractedSpec = {
+    models: [{
+      name: "Todo",
+      source: "models/todo.md",
+      properties: [
+        { name: "id", type: "number", constraints: [{ kind: "primaryKey" }] },
+        { name: "email", type: "string", constraints: [{ kind: "unique" }] },
+        {
+          name: "status",
+          type: "string",
+          constraints: [
+            { kind: "enum", values: ["active", "completed"] },
+            { kind: "default", value: "active" },
+          ],
+        },
+        {
+          name: "notes",
+          type: "string",
+          optional: true,
+          nullable: true,
+          constraints: [{ kind: "maxLength", value: 200 }],
+        },
+        {
+          name: "tags",
+          type: "string[]",
+          constraints: [{ kind: "size", min: 1, max: 10 }],
+        },
+      ],
+    }],
+  };
+
+  const out = generateTypes(spec);
+  // Identity, uniqueness, defaults and list size are documented on the type.
+  assertStringIncludes(out, "  /** @primaryKey */\n  id: number;");
+  assertStringIncludes(out, "  /** @unique */\n  email: string;");
+  assertStringIncludes(
+    out,
+    '  /** @default "active" */\n  status: TodoStatus;',
+  );
+  assertStringIncludes(out, "  /** @size [1..10] */\n  tags: string[];");
+  // Nullable stays distinct from optional: absent (`?`) vs null (`| null`).
+  assertStringIncludes(out, "  notes?: string | null;");
+});
+
+// Integration: nullable unions + JSDoc tags in the generated file must produce
+// valid TS that `deno check` accepts.
+Deno.test("generateTypes nullable + tag output passes deno check", async () => {
+  const spec: ExtractedSpec = {
+    models: [{
+      name: "Todo",
+      properties: [
+        { name: "id", type: "number", constraints: [{ kind: "primaryKey" }] },
+        { name: "notes", type: "string", optional: true, nullable: true },
+        {
+          name: "tags",
+          type: "string[]",
+          constraints: [{ kind: "size", min: 1, max: 10 }],
+        },
+      ],
+    }],
+  };
+
+  const dir = Deno.makeTempDirSync({ prefix: "verbo-types-nullable-" });
+  try {
+    Deno.writeTextFileSync(`${dir}/types.verbo.ts`, generateTypes(spec));
+    const cmd = new Deno.Command("deno", {
+      args: ["check", `${dir}/types.verbo.ts`],
+      stdout: "piped",
+      stderr: "piped",
+    });
+    const result = await cmd.output();
+    const stderr = new TextDecoder().decode(result.stderr);
+    assertEquals(result.success, true, stderr);
+  } finally {
+    Deno.removeSync(dir, { recursive: true });
+  }
+});
+
+Deno.test("generateTypes renders nullable function params", () => {
+  const spec: ExtractedSpec = {
+    models: [],
+    functions: [{
+      name: "lookup",
+      params: [
+        { name: "id", type: "number" },
+        { name: "hint", type: "string", optional: true, nullable: true },
+      ],
+      returnType: "string",
+    }],
+  };
+
+  const out = generateTypes(spec);
+  assertStringIncludes(
+    out,
+    "export type lookup = (id: number, hint?: string | null) => string;",
+  );
+});
+
 // --- Functions ---
 
 Deno.test("generateTypes renders function contracts after the models", () => {

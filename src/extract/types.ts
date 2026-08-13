@@ -8,28 +8,41 @@
 export type ConstraintKind =
   | "required"
   | "optional"
+  | "nullable"
   | "enum"
   | "range"
   | "minimum"
   | "maximum"
   | "positive"
-  | "format";
+  | "format"
+  | "default"
+  | "unique"
+  | "primaryKey"
+  | "minLength"
+  | "maxLength"
+  | "pattern"
+  | "size";
 
 /**
  * A value-level constraint on a property. Which fields are meaningful depends
  * on the kind:
  * - `enum`: `values`
- * - `range`: `min`, `max` (inclusive)
+ * - `range` / `size`: `min`, `max` (inclusive)
  * - `minimum` / `maximum`: `value`
  * - `format`: `value` (e.g. "email", "url", "uuid", "date")
- * - `required` / `optional` / `positive`: no extra fields
+ * - `minLength` / `maxLength`: `value` — a string's character-count bounds
+ * - `pattern`: `value` — a regular expression the string must match
+ * - `default`: `value` — the value the property takes when not provided
+ * - `required` / `optional` / `nullable` / `positive` / `unique` / `primaryKey`:
+ *   no extra fields. `optional` and `nullable` are folded into the property's
+ *   `optional`/`nullable` booleans at extraction time and dropped from the list.
  */
 export interface Constraint {
   kind: ConstraintKind;
   values?: (string | number)[];
   min?: number;
   max?: number;
-  value?: string | number;
+  value?: string | number | boolean;
 }
 
 /**
@@ -46,6 +59,8 @@ export interface Property {
   type: string;
   /** Whether the property may be omitted. Defaults to false. */
   optional?: boolean;
+  /** Whether the value may be null. Defaults to false. */
+  nullable?: boolean;
   constraints?: Constraint[];
   /** Source hint, e.g. "models/student.md". */
   source?: string;
@@ -68,6 +83,8 @@ export interface FunctionParam {
   type: string;
   /** Whether the argument may be omitted. Defaults to false. */
   optional?: boolean;
+  /** Whether the value may be null. Defaults to false. */
+  nullable?: boolean;
   constraints?: Constraint[];
   /** Source hint, e.g. "functions.md". */
   source?: string;

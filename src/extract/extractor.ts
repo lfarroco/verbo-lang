@@ -1,4 +1,8 @@
-import { dirname, fromFileUrl, join } from "https://deno.land/std@0.224.0/path/mod.ts";
+import {
+  dirname,
+  fromFileUrl,
+  join,
+} from "https://deno.land/std@0.224.0/path/mod.ts";
 
 import { createDirIfNotExists } from "../utils.ts";
 import type {
@@ -34,16 +38,17 @@ export async function extract(
 
   const repairSection = repairErrors.length > 0
     ? [
-        "",
-        "== REPAIR ROUND ==",
-        "Your previous extraction produced types that fail type-checking:",
-        ...repairErrors.map((e) => `- ${e}`),
-        "Please re-extract and fix these errors.",
-        "",
-      ].join("\n")
+      "",
+      "== REPAIR ROUND ==",
+      "Your previous extraction produced types that fail type-checking:",
+      ...repairErrors.map((e) => `- ${e}`),
+      "Please re-extract and fix these errors.",
+      "",
+    ].join("\n")
     : "";
 
-  const prompt = `${promptTemplate}\n\n== SPEC FILES ==\n${corpus}\n${repairSection}`;
+  const prompt =
+    `${promptTemplate}\n\n== SPEC FILES ==\n${corpus}\n${repairSection}`;
 
   createDirIfNotExists(LOG_DIR);
   Deno.writeTextFileSync(join(LOG_DIR, "extract-prompt.md"), prompt);
@@ -89,7 +94,9 @@ function extractJson(text: string): string | null {
 
   // Raw JSON fallback — find the outermost `{...}` or `[...]`.
   const opens = [text.indexOf("{"), text.indexOf("[")].filter((i) => i >= 0);
-  const closes = [text.lastIndexOf("}"), text.lastIndexOf("]")].filter((i) => i >= 0);
+  const closes = [text.lastIndexOf("}"), text.lastIndexOf("]")].filter((i) =>
+    i >= 0
+  );
   if (opens.length === 0 || closes.length === 0) return null;
 
   const start = Math.min(...opens);
@@ -106,7 +113,9 @@ function normalizeSpec(parsed: unknown): ExtractedSpec {
 
   if (!Array.isArray(modelsRaw)) {
     throw new Error(
-      `Extraction JSON must contain a "models" array. Got: ${JSON.stringify(parsed)}`,
+      `Extraction JSON must contain a "models" array. Got: ${
+        JSON.stringify(parsed)
+      }`,
     );
   }
 
@@ -192,12 +201,20 @@ function normalizeProperty(item: unknown): Property | null {
     }
   }
 
-  // "required" wins over "optional"; the `optional` constraint kind is folded
-  // into the boolean and dropped from the list to avoid redundancy.
+  // "required" wins over "optional" / "nullable"; the `optional` and `nullable`
+  // constraint kinds are folded into the booleans and dropped from the list to
+  // avoid redundancy.
   let optional = p.optional === true ||
     constraints.some((c) => c.kind === "optional");
-  if (constraints.some((c) => c.kind === "required")) optional = false;
-  const keptConstraints = constraints.filter((c) => c.kind !== "optional");
+  let nullable = p.nullable === true ||
+    constraints.some((c) => c.kind === "nullable");
+  if (constraints.some((c) => c.kind === "required")) {
+    optional = false;
+    nullable = false;
+  }
+  const keptConstraints = constraints.filter(
+    (c) => c.kind !== "optional" && c.kind !== "nullable",
+  );
 
   const property: Property = {
     name: p.name.trim(),
@@ -205,6 +222,7 @@ function normalizeProperty(item: unknown): Property | null {
       ? p.type.trim()
       : "string",
     optional,
+    nullable,
     constraints: keptConstraints,
   };
   if (typeof p.source === "string" && p.source.trim() !== "") {
@@ -221,15 +239,18 @@ function normalizeConstraint(item: unknown): Constraint | null {
   const constraint: Constraint = { kind: c.kind.trim() as Constraint["kind"] };
   if (Array.isArray(c.values)) {
     const values = c.values.filter(
-      (v): v is string | number => typeof v === "string" || typeof v === "number",
+      (v): v is string | number =>
+        typeof v === "string" || typeof v === "number",
     );
     if (values.length > 0) constraint.values = values;
   }
   if (typeof c.min === "number") constraint.min = c.min;
   if (typeof c.max === "number") constraint.max = c.max;
-  if (typeof c.value === "string" || typeof c.value === "number") {
+  if (
+    typeof c.value === "string" || typeof c.value === "number" ||
+    typeof c.value === "boolean"
+  ) {
     constraint.value = c.value;
   }
   return constraint;
 }
-

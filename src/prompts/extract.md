@@ -30,6 +30,9 @@ Property object:
 - "type": one of the type vocabulary below
 - "optional": true only when the prose clearly allows omission (e.g. "optional",
   "may be empty", "if provided"). Omit for required properties.
+- "nullable": true only when the prose clearly allows the value to be null (e.g.
+  "may be null", "nullable"). Omit for non-nullable values. Do not set both
+  "nullable" and "optional" unless the prose really allows both.
 - "constraints": array of constraint objects (empty or omitted when none)
 
 Function object ("functions" array):
@@ -66,6 +69,19 @@ Constraint vocabulary ("constraints"):
 - {"kind":"positive"} — greater than 0 (e.g. "must be positive")
 - {"kind":"format","value":"email"|"url"|"uuid"|"date"} — a format hint; e.g.
   "must be valid" for an email address
+- {"kind":"default","value":...} — the value the property takes when not
+  provided; e.g. "defaults to 'active'" → value "active"
+- {"kind":"unique"} — no two instances of the model may share the same value;
+  e.g. "each student has a unique email"
+- {"kind":"primaryKey"} — the property is the model's identity; e.g. "identified
+  by an id"
+- {"kind":"minLength","value":N} — a string must be at least N characters long
+- {"kind":"maxLength","value":N} — a string must be at most N characters long
+- {"kind":"pattern","value":"..."} — a string must match the given regular
+  expression
+- {"kind":"size","min":N,"max":M} — a list must have between N and M elements
+  (inclusive); e.g. "1 to 30 students" on a list property. Use "size" for list
+  cardinality, not "range" (which is for numeric values).
 
 Naming references to other models:
 
@@ -246,7 +262,10 @@ Example JSON output:
         {
           "name": "status",
           "type": "string",
-          "constraints": [{ "kind": "enum", "values": ["active", "completed"] }]
+          "constraints": [
+            { "kind": "enum", "values": ["active", "completed"] },
+            { "kind": "default", "value": "active" }
+          ]
         }
       ]
     }
@@ -262,6 +281,10 @@ Processing instructions:
 - Infer property types from the prose description ("a string", "9 to 12" →
   number with a range, "the date ..." → date).
 - Infer enums from "either X or Y" / "one of X, Y" / "restricted to".
+- Infer defaults from "defaults to X"; uniqueness from "unique"/"no two share";
+  identity from "identified by"/"primary key"; string length bounds from "at
+  least N characters"/"at most N characters"; list cardinality from "1 to N" on
+  a list property.
 - Infer function signatures from prose ("takes a date and returns a string" →
   param date: "date", returnType "string"; "a list of classes" → "Class[]").
 - Keep model, property and function names consistent across all files.

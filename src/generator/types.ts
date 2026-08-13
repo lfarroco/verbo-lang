@@ -1,4 +1,5 @@
 import type {
+  Constraint,
   ExtractedSpec,
   Model,
   Property,
@@ -125,11 +126,49 @@ function renderModel(model: Model): string {
       ? enumTypeName(model.name, property.name)
       : mapType(property.type);
     const optional = property.optional ? "?" : "";
-    lines.push(`  ${property.name}${optional}: ${type};`);
+    const nullable = property.nullable ? " | null" : "";
+    lines.push(...propertyDocComments(property));
+    lines.push(`  ${property.name}${optional}: ${type}${nullable};`);
   }
 
   const body = lines.length > 0 ? `\n${lines.join("\n")}\n` : "";
   return `export type ${model.name} = {${body}};`;
+}
+
+/** JSDoc tags for constraints the type system cannot express but consumers of
+ * `types.verbo.ts` should see — defaults, uniqueness, identity, and list size.
+ * Assertable constraints (`minLength`, `maxLength`, `pattern`, `range`, ...)
+ * are enforced by `.verbo/validate.ts` and are not repeated here. */
+function propertyDocComments(property: Property): string[] {
+  const tags: string[] = [];
+  for (const c of property.constraints ?? []) {
+    switch (c.kind) {
+      case "default":
+        tags.push(`@default ${JSON.stringify(c.value)}`);
+        break;
+      case "unique":
+        tags.push("@unique");
+        break;
+      case "primaryKey":
+        tags.push("@primaryKey");
+        break;
+      case "size":
+        tags.push(`@size ${sizeDescription(c)}`);
+        break;
+      default:
+        break;
+    }
+  }
+  return tags.length > 0 ? [`  /** ${tags.join(" ")} */`] : [];
+}
+
+function sizeDescription(constraint: Constraint): string {
+  const min = constraint.min;
+  const max = constraint.max;
+  if (min !== undefined && max !== undefined) return `[${min}..${max}]`;
+  if (min !== undefined) return `[${min}..]`;
+  if (max !== undefined) return `[..${max}]`;
+  return "[?]";
 }
 
 // --- Functions ---
@@ -137,7 +176,8 @@ function renderModel(model: Model): string {
 function renderFunction(fn: SpecFunction): string {
   const params = fn.params.map((p) => {
     const optional = p.optional ? "?" : "";
-    return `${p.name}${optional}: ${mapType(p.type)}`;
+    const nullable = p.nullable ? " | null" : "";
+    return `${p.name}${optional}: ${mapType(p.type)}${nullable}`;
   });
   return `export type ${fn.name} = (${params.join(", ")}) => ${
     mapType(fn.returnType)

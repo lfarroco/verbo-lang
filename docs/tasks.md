@@ -341,3 +341,67 @@ that passes `deno check` (extraction gate per DESIGN §15), and the generated
       docs should defer to DESIGN §5/§6.
 - [ ] **H11. Split `src/interview/engine.ts` (588 lines) / `main.ts` (343)** —
       natural refactor when CLI polish lands.
+
+---
+
+## 6. Language feature quick wins
+
+> Feature roadmap and rationale live in
+> [`docs/language-features.md`](./language-features.md).
+
+- [x] **Q1. Quick-win constraint kinds** — `default`, `unique`, `primaryKey`,
+      `minLength`, `maxLength`, `pattern`, `size` constraint kinds plus the
+      `nullable` property flag (schema `src/extract/types.ts`, prompt
+      `src/prompts/extract.md`, type generator, assertion generator, tests).
+      `default`/`unique`/`primaryKey` render as JSDoc tags on the generated
+      types; `minLength`/`maxLength`/`pattern`/`size` are asserted.
+- [x] **Q2. Feature catalog doc** — `docs/language-features.md` documenting the
+      current surface, the quick wins, the planned tiers, and the rejected OOP
+      features.
+
+### Next batch (see the catalog for the full list)
+
+- [ ] **Q3. Declared relationships with inverses** — declare one side, derive
+      the back-reference (Tier 2).
+- [ ] **Q4. Pre/post conditions on functions** — "when the list is empty the
+      average is 0" (Tier 3).
+- [ ] **Q5. Array element constraints** — "each rating is 1 to 5" (Tier 1).
+
+### Backlog (rest of the catalog)
+
+Grouped by the tiers in [`docs/language-features.md`](./language-features.md)
+§4.
+
+**Tier 1 — constraint vocabulary**
+
+- [ ] **Q6. Ordered vs unordered lists** — capture whether a list preserves
+      order; the `ls` fixture's sort prose needs this.
+- [ ] **Q7. Cross-property constraints** — "endDate after startDate";
+      conditional required ("if paid, paymentDate is required"). Hardest of
+      the tier.
+
+**Tier 2 — relationship semantics**
+
+- [ ] **Q8. Lifecycle semantics** — cascade / restrict / orphan when a
+      referenced model is removed.
+
+**Tier 3 — behavioral contracts**
+
+- [ ] **Q9. State machines / allowed transitions** — "active → completed,
+      never back".
+- [ ] **Q10. Operations / state changes** — create/update/delete semantics;
+      the `guild/routes.md` interactions are prose for this today.
+
+**Tier 4 — type-level expressiveness**
+
+- [ ] **Q11. Named value types / aliases** — "`EmailAddress` is a string, email
+      format". Reuse constraints without copying prose.
+- [ ] **Q12. Sealed unions** — "a `Pet` is either a `Cat` or a `Dog`".
+      Data-level one-of; the non-OOP replacement for inheritance.
+- [ ] **Q13. Derived fields** — "`fullName = firstName + lastName`".
+
+**Tier 5 — scale**
+
+- [ ] **Q14. Namespaces / domains** — group models ("billing", "inventory").
+- [ ] **Q15. Cross-spec imports** — reference another Verbo project's model.
+- [ ] **Q16. Deprecation / status metadata** — "deprecated: use X".

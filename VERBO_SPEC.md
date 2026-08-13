@@ -51,6 +51,14 @@ Embed constraints naturally in the description:
 | "(must be positive)" | Positive: >0 |
 | "(must be valid)" | Format hint (email) |
 | "cannot be empty" | Required |
+| "defaults to 'active'" | Default: "active" |
+| "each student has a unique email" | Unique |
+| "identified by an id" | Primary key |
+| "at least 3 characters" | minLength: 3 |
+| "at most 80 characters" | maxLength: 80 |
+| "must match `^[A-Za-z]`" | Pattern |
+| "1 to 30 students" (on a list) | size: [1..30] |
+| "may be null" | nullable |
 
 **Good:**
 ```markdown
@@ -184,6 +192,10 @@ export type Class = {
 };
 ```
 
+`nullable` properties render as `| null`; `default`, `unique`, and `primaryKey`
+constraints are preserved as `@default` / `@unique` / `@primaryKey` JSDoc tags
+on the generated property.
+
 ### 3.5 Validation
 
 `deno check types.verbo.ts` validates the type graph. If it fails, the errors are fed back to the LLM in a repair loop:
@@ -208,6 +220,9 @@ function assert_Student_gradeLevel(value: number, source: string): void {
   }
 }
 ```
+
+String length (`minLength`, `maxLength`), regular expression (`pattern`) and
+list cardinality (`size`) constraints are asserted the same way.
 
 ### 3.7 Clarification
 

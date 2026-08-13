@@ -153,6 +153,10 @@ teammate. Some conventions help the LLM extract better:
 - **Use bullet points for properties** — `- name: description` patterns.
 - **Be explicit about ranges and constraints** — "9 to 12" is clearer than "a
   high school student."
+- **State defaults, uniqueness, identity and list size** — "defaults to
+  active", "each student has a unique email", "identified by an id", and "1 to
+  30 students" are all extracted; string-length, pattern and list-size
+  constraints are enforced by generated assertions.
 - **Describe cross-model references** — how one model relates to another is a
   property that references it: a single one (`- teacher: The teacher who teaches
   the class.`) or a list (`- classes: The classes the student is enrolled in.`).
@@ -230,4 +234,5 @@ A VS Code dev container is available at `.devcontainer/`.
 ## Roadmap
 
 See [docs/roadmap.md](./docs/roadmap.md), [docs/DESIGN.md](./docs/DESIGN.md),
-and the current milestone's [task list](./docs/tasks.md).
+the [language feature catalog](./docs/language-features.md), and the current
+milestone's [task list](./docs/tasks.md).

@@ -54,7 +54,11 @@ Deno.test("parseExtraction normalizes optional/required precedence", () => {
         { name: "a", type: "string", optional: true },
         { name: "b", type: "string", constraints: [{ kind: "optional" }] },
         { name: "c", type: "string", constraints: [{ kind: "required" }] },
-        { name: "d", type: "string", constraints: [{ kind: "required" }, { kind: "optional" }] },
+        {
+          name: "d",
+          type: "string",
+          constraints: [{ kind: "required" }, { kind: "optional" }],
+        },
       ],
     }],
   });
@@ -65,6 +69,77 @@ Deno.test("parseExtraction normalizes optional/required precedence", () => {
   assertEquals(props[1].constraints, []);
   // `required` constraints are kept for the assertion generator.
   assertEquals(props[2].constraints, [{ kind: "required" }]);
+});
+
+Deno.test("parseExtraction normalizes nullable and keeps the new constraint kinds", () => {
+  const text = JSON.stringify({
+    models: [{
+      name: "Todo",
+      properties: [
+        { name: "id", type: "number", constraints: [{ kind: "primaryKey" }] },
+        {
+          name: "status",
+          type: "string",
+          constraints: [{ kind: "default", value: "active" }],
+        },
+        { name: "email", type: "string", constraints: [{ kind: "unique" }] },
+        { name: "nickname", type: "string", nullable: true },
+        {
+          name: "nickname2",
+          type: "string",
+          constraints: [{ kind: "nullable" }],
+        },
+        {
+          name: "title",
+          type: "string",
+          constraints: [
+            { kind: "minLength", value: 3 },
+            { kind: "maxLength", value: 80 },
+            { kind: "pattern", value: "^[A-Za-z]" },
+          ],
+        },
+        {
+          name: "tags",
+          type: "string[]",
+          constraints: [{ kind: "size", min: 1, max: 5 }],
+        },
+      ],
+    }],
+  });
+
+  const props = parseExtraction(text).models[0].properties;
+  assertEquals(
+    props.map((p) => p.nullable),
+    [false, false, false, true, true, false, false],
+  );
+  assertEquals(props[0].constraints, [{ kind: "primaryKey" }]);
+  assertEquals(props[1].constraints, [{ kind: "default", value: "active" }]);
+  assertEquals(props[2].constraints, [{ kind: "unique" }]);
+  // `nullable` constraint kinds fold into the boolean and are removed.
+  assertEquals(props[4].constraints, []);
+  assertEquals(props[5].constraints, [
+    { kind: "minLength", value: 3 },
+    { kind: "maxLength", value: 80 },
+    { kind: "pattern", value: "^[A-Za-z]" },
+  ]);
+  assertEquals(props[6].constraints, [{ kind: "size", min: 1, max: 5 }]);
+});
+
+Deno.test("parseExtraction required wins over nullable", () => {
+  const text = JSON.stringify({
+    models: [{
+      name: "A",
+      properties: [{
+        name: "a",
+        type: "string",
+        nullable: true,
+        constraints: [{ kind: "required" }],
+      }],
+    }],
+  });
+
+  const props = parseExtraction(text).models[0].properties;
+  assertEquals(props[0].nullable, false);
 });
 
 Deno.test("parseExtraction keeps model-reference properties and ignores a stray relationships key", () => {
@@ -138,13 +213,26 @@ Deno.test("parseExtraction parses functions with params and returnType", () => {
   assertEquals(spec.functions!.length, 2);
   assertEquals(spec.functions![0].name, "formatEnrollmentDate");
   assertEquals(spec.functions![0].source, "functions.md");
-  // Params reuse the property normalizer, so they carry optional/constraints.
+  // Params reuse the property normalizer, so they carry optional/nullable and
+  // constraints.
   assertEquals(spec.functions![0].params, [
-    { name: "date", type: "date", optional: false, constraints: [] },
+    {
+      name: "date",
+      type: "date",
+      optional: false,
+      nullable: false,
+      constraints: [],
+    },
   ]);
   assertEquals(spec.functions![0].returnType, "string");
   assertEquals(spec.functions![1].params, [
-    { name: "classes", type: "Class[]", optional: false, constraints: [] },
+    {
+      name: "classes",
+      type: "Class[]",
+      optional: false,
+      nullable: false,
+      constraints: [],
+    },
   ]);
   assertEquals(spec.functions![1].returnType, "number");
 });
