@@ -406,7 +406,9 @@ Stages:
 - **Code generation.** Application code, API handlers, database schemas. Separate project if ever.
 - **Web shell.** Browse specs, view the model graph, edit in-browser.
 - **LLM-facing API / MCP server.** Expose the spec checker to other LLMs.
-- **Interview spec-authoring agent.** An AI that interviews the developer to create initial specs.
+- **Interview spec-authoring agent.** An AI that interviews the developer to
+  create initial specs — **now planned**, see
+  [`docs/specs-from-zero.md`](./specs-from-zero.md).
 
 ## 15. Implementation phases
 

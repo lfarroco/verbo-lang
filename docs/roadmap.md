@@ -28,4 +28,5 @@
 - Code generation (separate project if ever).
 - Web shell (browse specs, model graph, edit in-browser).
 - LLM-facing API / MCP server.
-- Interview spec-authoring agent.
+- Interview spec-authoring agent — now planned, see
+  [docs/specs-from-zero.md](./specs-from-zero.md).
