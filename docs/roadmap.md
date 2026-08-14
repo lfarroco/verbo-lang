@@ -30,3 +30,5 @@
 - LLM-facing API / MCP server.
 - Interview spec-authoring agent — now planned, see
   [docs/specs-from-zero.md](./specs-from-zero.md).
+- Reverse spec extraction from an existing codebase — future plan (gated on
+  requisites), see [docs/capture-from-code.md](./capture-from-code.md).

@@ -440,6 +440,9 @@ Stages:
 - **Interview spec-authoring agent.** An AI that interviews the developer to
   create initial specs — **now planned**, see
   [`docs/specs-from-zero.md`](./specs-from-zero.md).
+- **Reverse spec extraction.** Derive an initial spec corpus from an existing
+  codebase — **future plan, gated on requisites**, see
+  [`docs/capture-from-code.md`](./capture-from-code.md).
 
 ## 15. Implementation phases
 
